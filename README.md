@@ -41,7 +41,7 @@ Skills are structured instructions that give AI agents specialized capabilities.
 
 | Skill | Description | API |
 |-------|-------------|-----|
-| [Domain Advisor](skills/domain-advisor/) | Find, check, and evaluate domain names with weighted business scoring across 7 dimensions | [domain-checker.yoann.workers.dev](https://domain-checker.yoann.workers.dev) |
+| [Domain Advisor](skills/domain-advisor/) | Find, check, and evaluate domain names with weighted business scoring across 7 dimensions | [domain-checker.openlabor.workers.dev](https://domain-checker.openlabor.workers.dev) |
 
 > More skills coming soon. Want to build one? See [Contributing](#contributing) below.
 >

@@ -19,7 +19,7 @@ Your AI domain strategist. Checks availability, brainstorms names, and scores ev
 
 ## API
 
-**Endpoint:** `https://domain-checker.yoann.workers.dev`
+**Endpoint:** `https://domain-checker.openlabor.workers.dev`
 
 **Check availability (batch):**
 ```
@@ -72,7 +72,7 @@ If the user provides specific domains, check them directly. If they describe a b
 
 Use the Bash tool to call the API:
 ```bash
-curl -s "https://domain-checker.yoann.workers.dev/check?domains=name1.com,name1.ai,name2.com,name2.ai" | python3 -m json.tool
+curl -s "https://domain-checker.openlabor.workers.dev/check?domains=name1.com,name1.ai,name2.com,name2.ai" | python3 -m json.tool
 ```
 
 Batch multiple domains in a single call (max 20). Run multiple batches in parallel if needed.
