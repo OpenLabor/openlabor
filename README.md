@@ -21,6 +21,59 @@
 
 ---
 
+## What is OpenLabor?
+
+Most AI tools give you a personal assistant — a chatbot that answers your questions. OpenLabor is different. We build **AI employees** — agents with a role, a personality, specialized skills, and recurring missions. They don't wait for you to ask. They work on a schedule, connect to your platforms, and get things done.
+
+An AI employee is not a prompt. It's a complete worker defined by three things:
+- **Who they are** — a role with personality, behavior guidelines, and boundaries
+- **What they can do** — specialized skills with workflows, scoring frameworks, and APIs
+- **What they do on autopilot** — scheduled missions that run every day or every week
+
+### What they actually do
+
+These aren't toy demos. Here's a sample of real missions:
+
+| Mission | Role | Schedule | What happens |
+|---------|------|----------|-------------|
+| **Daily Outbound Prospecting** | SDR | Every morning | Researches prospects, writes personalized cold emails, schedules follow-ups |
+| **Daily Code Review Sweep** | CTO | Every morning | Reviews all open PRs for bugs, security issues, and style violations |
+| **Campaign Performance Review** | CMO | Weekly | Pulls data from all campaigns, ranks by ROI, drafts executive summary |
+| **Pipeline Follow-Up Sweep** | SDR | Daily | Re-engages stale deals with fresh intel and personalized outreach |
+| **Brand Mention Monitor** | CMO | Every 6 hours | Scans social platforms for mentions, categorizes sentiment, drafts responses |
+| **Weekly Security Audit** | CTO | Weekly | Scans codebase for vulnerabilities, checks dependencies, reports findings |
+
+### Available roles
+
+| Role | Department | What they do |
+|------|-----------|-------------|
+| **CTO** | Engineering | Code review, architecture, deployments, security audits, technical docs |
+| **CMO** | Marketing | Social media, email campaigns, SEO, content strategy, brand management |
+| **SDR** | Sales | Cold outreach, lead qualification, pipeline management, follow-up sequences |
+| **Support** | Customer Success | Ticket handling, FAQ automation, customer onboarding, escalation management |
+| **Writer** | Content | Blog posts, newsletters, social copy, landing pages, case studies |
+| **Designer** | Design | UI/UX, brand assets, social graphics, presentations |
+| **Data Analyst** | Data | Reporting dashboards, market research, business intelligence |
+| **COO** | Operations | Workflow automation, process optimization, KPI tracking |
+
+---
+
+## Labor.so — the cloud platform
+
+Don't want to set anything up? **[Labor.so](https://labor.so)** is the managed cloud version of OpenLabor.
+
+- **Hire from the catalog** — pick a role, give them a name, they're ready in seconds
+- **Plug in any skill** — browse community skills and activate them in one click
+- **Assign missions** — set recurring tasks with a schedule and let them run
+- **Connect platforms** — Telegram, Slack, WhatsApp, Discord, email — all built in
+- **Usage-based pricing** — pay per credit, start free, scale as you grow
+
+We manage the infrastructure, the AI orchestration, the platform connections, and the billing. You just hire and put them to work.
+
+**[Try it free at labor.so](https://labor.so)**
+
+---
+
 ## Repository Structure
 
 ```
