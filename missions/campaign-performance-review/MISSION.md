@@ -1,22 +1,15 @@
 ---
 name: Campaign Performance Review
-role: CMO
-schedule: Weekly, Monday 8:00 AM
-estimatedCredits: 12
+roles:
+  - "CMO"
+category: Marketing
+schedule: "Weekly, Monday 8:00 AM"
 tags: [campaigns, analytics, roi, marketing, review]
 ---
 
 # Campaign Performance Review
 
 Compile a comprehensive review of all active marketing campaigns with ROI analysis.
-
-## Steps
-
-1. Pull performance data from all active campaigns
-2. Rank campaigns by ROI and engagement
-3. Evaluate brand alignment and messaging consistency
-4. Draft executive summary with recommendations
-5. Output actionable next steps for each campaign
 
 ## Prompt
 
