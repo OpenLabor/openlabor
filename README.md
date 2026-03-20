@@ -51,16 +51,23 @@ These aren't toy demos. Here's a sample of real missions:
 
 ### Available roles
 
-| Role | Department | What they do |
-|------|-----------|-------------|
-| **CTO** | Engineering | Code review, architecture, deployments, security audits, technical docs |
-| **CMO** | Marketing | Social media, email campaigns, SEO, content strategy, brand management |
-| **SDR** | Sales | Cold outreach, lead qualification, pipeline management, follow-up sequences |
-| **Support** | Customer Success | Ticket handling, FAQ automation, customer onboarding, escalation management |
-| **Writer** | Content | Blog posts, newsletters, social copy, landing pages, case studies |
-| **Designer** | Design | UI/UX, brand assets, social graphics, presentations |
-| **Data Analyst** | Data | Reporting dashboards, market research, business intelligence |
-| **COO** | Operations | Workflow automation, process optimization, KPI tracking |
+| Role | Name | Department | What they do |
+|------|------|-----------|-------------|
+| **CTO** | Travis | Engineering | Code review, architecture, deployments, security audits, technical docs |
+| **CMO** | Madison | Marketing | Social media, email campaigns, SEO, content strategy, brand management |
+| **SDR** | Hunter | Sales | Cold outreach, lead qualification, pipeline management, follow-up sequences |
+| **COO** | Oliver | Operations | Workflow automation, process optimization, KPI tracking |
+| **X Manager** | Xavier | Marketing | Tweet writing, threads, engagement, audience growth, X analytics |
+| **Designer** | Daisy | Design | UI/UX, brand assets, social graphics, presentations, design systems |
+| **Content Writer** | Penelope | Content | Blog posts, newsletters, SEO articles, case studies, social copy |
+| **Data Analyst** | Derek | Data | Reporting dashboards, market research, forecasting, anomaly detection |
+| **HR Manager** | Holly | HR | Resume screening, candidate outreach, onboarding, policy drafting |
+| **Logo Designer** | Logan | Design | Logo concepts, wordmarks, brand identity systems, style guides |
+| **Brand Advisor** | Brandon | Marketing | Domain checking, brand naming, trademark screening, competitive analysis |
+| **Accountant** | Penny | Finance | Invoicing, expense categorization, cash flow tracking, financial reporting |
+| **Lead Finder** | Chase | Sales | Lead scraping, contact enrichment, ICP targeting, intent signals |
+| **Social Manager** | Sierra | Marketing | Content scheduling, engagement, community building, trend monitoring |
+| **Email Secretary** | Reed | Operations | Email triage, auto-replies, follow-up tracking, calendar management |
 
 ---
 
@@ -83,21 +90,37 @@ We manage the infrastructure, the AI orchestration, the platform connections, an
 ## Repository Structure
 
 ```
-employees/          Who they are — role, personality, behavior
+employees/             Who they are — 15 roles across 8 departments
   cto/EMPLOYEE.md
   cmo/EMPLOYEE.md
   sdr/EMPLOYEE.md
-  support/EMPLOYEE.md
+  coo/EMPLOYEE.md
+  x-manager/EMPLOYEE.md
+  designer/EMPLOYEE.md
   writer/EMPLOYEE.md
+  analyst/EMPLOYEE.md
+  hr/EMPLOYEE.md
+  logo-designer/EMPLOYEE.md
+  brand-advisor/EMPLOYEE.md
+  accountant/EMPLOYEE.md
+  lead-finder/EMPLOYEE.md
+  social-manager/EMPLOYEE.md
+  email-secretary/EMPLOYEE.md
 
-skills/             What they can do — workflows, APIs, scoring frameworks
-  domain-advisor/SKILL.md
+skills/                What they can do — 99 skills across 15 categories
+  domain-checker/SKILL.md
+  logo-maker/SKILL.md
+  code-review/SKILL.md
+  cold-outreach/SKILL.md
+  seo-optimization/SKILL.md
+  ... and 94 more
 
-missions/           What they do on autopilot — scheduled recurring tasks
-  daily-social-content/MISSION.md
-  daily-outbound-prospecting/MISSION.md
-  daily-code-review/MISSION.md
+missions/              What they do on autopilot — 35 scheduled missions
+  daily-social-content-engine/MISSION.md
+  daily-code-review-sweep/MISSION.md
+  weekly-security-audit/MISSION.md
   campaign-performance-review/MISSION.md
+  ... and 31 more
 ```
 
 ---
@@ -106,13 +129,23 @@ missions/           What they do on autopilot — scheduled recurring tasks
 
 An `EMPLOYEE.md` defines who an AI employee is — their role, personality, core skills, behavior guidelines, and boundaries. This is their identity.
 
-| Role | Department | File |
-|------|-----------|------|
-| **CTO** | Engineering | [`employees/cto/EMPLOYEE.md`](employees/cto/EMPLOYEE.md) |
-| **CMO** | Marketing | [`employees/cmo/EMPLOYEE.md`](employees/cmo/EMPLOYEE.md) |
-| **SDR** | Sales | [`employees/sdr/EMPLOYEE.md`](employees/sdr/EMPLOYEE.md) |
-| **Support** | Customer Success | [`employees/support/EMPLOYEE.md`](employees/support/EMPLOYEE.md) |
-| **Writer** | Content | [`employees/writer/EMPLOYEE.md`](employees/writer/EMPLOYEE.md) |
+| Role | Name | Department | File |
+|------|------|-----------|------|
+| **CTO** | Travis | Engineering | [`employees/cto/EMPLOYEE.md`](employees/cto/EMPLOYEE.md) |
+| **CMO** | Madison | Marketing | [`employees/cmo/EMPLOYEE.md`](employees/cmo/EMPLOYEE.md) |
+| **SDR** | Hunter | Sales | [`employees/sdr/EMPLOYEE.md`](employees/sdr/EMPLOYEE.md) |
+| **COO** | Oliver | Operations | [`employees/coo/EMPLOYEE.md`](employees/coo/EMPLOYEE.md) |
+| **X Manager** | Xavier | Marketing | [`employees/x-manager/EMPLOYEE.md`](employees/x-manager/EMPLOYEE.md) |
+| **Designer** | Daisy | Design | [`employees/designer/EMPLOYEE.md`](employees/designer/EMPLOYEE.md) |
+| **Content Writer** | Penelope | Content | [`employees/writer/EMPLOYEE.md`](employees/writer/EMPLOYEE.md) |
+| **Data Analyst** | Derek | Data | [`employees/analyst/EMPLOYEE.md`](employees/analyst/EMPLOYEE.md) |
+| **HR Manager** | Holly | HR | [`employees/hr/EMPLOYEE.md`](employees/hr/EMPLOYEE.md) |
+| **Logo Designer** | Logan | Design | [`employees/logo-designer/EMPLOYEE.md`](employees/logo-designer/EMPLOYEE.md) |
+| **Brand Advisor** | Brandon | Marketing | [`employees/brand-advisor/EMPLOYEE.md`](employees/brand-advisor/EMPLOYEE.md) |
+| **Accountant** | Penny | Finance | [`employees/accountant/EMPLOYEE.md`](employees/accountant/EMPLOYEE.md) |
+| **Lead Finder** | Chase | Sales | [`employees/lead-finder/EMPLOYEE.md`](employees/lead-finder/EMPLOYEE.md) |
+| **Social Manager** | Sierra | Marketing | [`employees/social-manager/EMPLOYEE.md`](employees/social-manager/EMPLOYEE.md) |
+| **Email Secretary** | Reed | Operations | [`employees/email-secretary/EMPLOYEE.md`](employees/email-secretary/EMPLOYEE.md) |
 
 **Example** — from the CMO employee:
 
@@ -137,28 +170,34 @@ storytelling with measurable results.
 
 A `SKILL.md` gives an employee a specialized capability. Skills include triggers (keywords that activate them), step-by-step workflows, scoring frameworks, and optional API integrations.
 
+**99 skills** across 15 categories. Here are the highlights:
+
+| Category | Skills | Roles |
+|----------|--------|-------|
+| **Content Creation** | Generate Image, Generate Video, Write Copy, Design Social Post, Create Carousel | CMO, Designer, Social Manager |
+| **Distribution** | Send Email Campaign, Post to Social Media, Schedule Content, Manage Newsletter | CMO, Social Manager, X Manager |
+| **Strategy** | SEO Optimization, Competitor Analysis, Brand Guidelines, Content Calendar | CMO, Writer, Brand Advisor |
+| **Analytics** | Campaign Reporting, A/B Testing, Funnel Analysis, Sentiment Monitoring | CMO, Analyst |
+| **Code** | Generate Code, Code Review, Bug Fixing, Refactoring, Write Tests | CTO |
+| **Infrastructure** | Deploy to Production, CI/CD Management, Server Monitoring, Security Scan | CTO |
+| **Architecture** | System Design, API Design, Tech Stack Evaluation, Performance Audit | CTO |
+| **Sales** | Cold Outreach, Lead Qualification, CRM Management, Lead Sourcing, Prospect Research | SDR, Lead Finder |
+| **Design** | UI Design, Brand Assets, Social Graphics, Logo Design, Icon Design | Designer, Logo Designer |
+| **Operations** | Workflow Automation, Process Optimization, Team Coordination, Email Triage | COO, Email Secretary |
+| **Finance** | Bookkeeping, Financial Reports, Invoicing, Budget Analysis | Accountant |
+| **HR** | Recruiting, Onboarding, Culture, HR Docs | HR Manager |
+| **Marketing** | Domain Research, Brand Naming, Brand Strategy, X Strategy | Brand Advisor, X Manager |
+
+Plus **2 standalone skills** with full API integrations:
+
 | Skill | Description | File |
 |-------|-------------|------|
-| **Domain Advisor** | Find, check, and evaluate domain names with weighted scoring across 7 dimensions | [`skills/domain-advisor/SKILL.md`](skills/domain-advisor/SKILL.md) |
-
-**Example** — from the Domain Advisor skill:
-
-```markdown
----
-name: domain-advisor
-triggers: ["check domain", "find domain", "suggest domain"]
----
-
-# Domain Advisor
-
-## Workflow
-1. Parse input for domain names or business description
-2. Check availability via API
-3. Score on memorability, length, SEO, brandability...
-4. Rank and present with reasoning
-```
+| **Domain Checker** | Check domain availability in bulk via RDAP and DNS — free API, no key needed | [`skills/domain-checker/SKILL.md`](skills/domain-checker/SKILL.md) |
+| **Logo Maker** | Generate professional logos using Flux and Imagen AI models | [`skills/logo-maker/SKILL.md`](skills/logo-maker/SKILL.md) |
 
 Skills work with any AI agent that supports structured prompts — Claude, ChatGPT, Cursor, and more.
+
+> Browse all 99 skills in the [`skills/`](skills/) directory.
 
 > Want to build a skill? See [Contributing](#add-a-new-skill) below.
 
@@ -168,29 +207,42 @@ Skills work with any AI agent that supports structured prompts — Claude, ChatG
 
 A `MISSION.md` defines a recurring task that runs on a schedule. Missions are the real work — things your AI employees do automatically, every day or every week.
 
-| Mission | Role | Schedule | File |
-|---------|------|----------|------|
-| **Daily Social Content Engine** | CMO | Daily 9 AM | [`missions/daily-social-content/MISSION.md`](missions/daily-social-content/MISSION.md) |
-| **Daily Outbound Prospecting** | SDR | Daily 9 AM | [`missions/daily-outbound-prospecting/MISSION.md`](missions/daily-outbound-prospecting/MISSION.md) |
-| **Daily Code Review Sweep** | CTO | Daily 9 AM | [`missions/daily-code-review/MISSION.md`](missions/daily-code-review/MISSION.md) |
-| **Campaign Performance Review** | CMO | Weekly Monday | [`missions/campaign-performance-review/MISSION.md`](missions/campaign-performance-review/MISSION.md) |
+**35 missions** across 10 categories:
+
+| Category | Missions | Roles |
+|----------|----------|-------|
+| **Marketing** | Daily Social Content Engine, Weekly X Thread Builder, Campaign Performance Review, Brand Mention Monitor, Daily Engagement Sweep, Weekly X Analytics Report, Daily Community Engagement | CMO, X Manager, Social Manager |
+| **Sales** | Daily Outbound Prospecting, Weekly Lead List Builder, Pipeline Follow-Up Sweep, Weekly Win/Loss Analysis, Daily Intent Signal Monitor, Monthly ICP Refinement | SDR, Lead Finder |
+| **Engineering** | Daily Code Review Sweep, Weekly Security Audit, Weekly Dependency Update | CTO |
+| **Content** | Weekly Content Roundup, Daily SEO Blog Draft, Monthly Content Calendar Planning | Content Writer, CMO |
+| **Design** | Weekly Social Graphics Batch, Monthly Logo Refresh Concepts, Daily UI Component Audit, Monthly Brand Consistency Report, Weekly Brand Asset Inventory, Monthly Competitor Brand Audit | Designer, Logo Designer |
+| **Operations** | Daily Inbox Triage, Weekly Ops Dashboard Report, Daily Team Standup Summary, Monthly Process Audit, Weekly Email Analytics Report, Daily Calendar Prep, Weekly Content Calendar Review | COO, Email Secretary, Social Manager |
+| **Analytics** | Daily Metrics Anomaly Report, Weekly Revenue Dashboard, Monthly Market Research Report | Data Analyst |
+| **HR** | Weekly Candidate Pipeline Review, Daily Employee Sentiment Scan, Monthly Onboarding Feedback Report | HR Manager |
+| **Finance** | Daily Expense Reconciliation, Weekly Cash Flow Forecast, Monthly Financial Close | Accountant |
+| **Branding** | Weekly Domain Opportunity Scan, Monthly Brand Health Report, Quarterly Naming Workshop | Brand Advisor |
+
+> Browse all 35 missions in the [`missions/`](missions/) directory.
 
 **Example** — from the Daily Code Review mission:
 
 ```markdown
 ---
 name: Daily Code Review Sweep
-role: CTO
-schedule: Daily at 9:00 AM
-estimatedCredits: 12
+roles:
+  - "CTO"
+category: Engineering
+schedule: "Daily at 9:00 AM"
+tags: [code review, pull requests, security, engineering, daily]
 ---
 
-## Steps
-1. Scan all open pull requests
-2. Review for bugs, logic errors, and edge cases
-3. Run security audit for vulnerabilities
-4. Verify coding standards compliance
-5. Post review comments and generate summary
+# Daily Code Review Sweep
+
+Review all open pull requests for bugs, security issues, and style violations.
+
+## Prompt
+
+Use #Code review to scan all open pull requests in the repository...
 ```
 
 > Want to add a mission? See [Contributing](#add-a-new-mission) below.
@@ -228,22 +280,20 @@ Found a better personality prompt? A missing behavior guideline? A more efficien
 ### Ideas for contributions
 
 **Employees:**
-- HR Manager, Product Manager, Recruiter, CFO, Legal Counsel
+- Product Manager, Recruiter, CFO, Legal Counsel, Customer Success Manager
 
 **Skills:**
-- SEO Auditor — analyze URLs for SEO issues and opportunities
-- Competitor Analyzer — research and compare competitors
 - Pricing Advisor — evaluate SaaS pricing strategies
-- Brand Name Generator — brainstorm and score company names
-- Tech Stack Advisor — recommend stacks based on requirements
+- Contract Reviewer — analyze legal documents for risks
+- Competitor Tracker — automated competitive intelligence
+- Customer Health Score — predict churn from usage signals
 
 **Missions:**
-- Weekly Newsletter — curate and write a weekly industry digest
 - Customer Feedback Digest — summarize support tickets into product insights
-- Monthly Financial Summary — compile revenue, expenses, and runway report
-- Weekly Hiring Pipeline — screen applicants and schedule interviews
+- Weekly Competitive Intel Brief — track competitor launches and pricing changes
+- Daily Support Ticket Triage — categorize and route incoming tickets
 
-No contribution is too small. Fix a typo. Add a step to a mission. Suggest a trigger for a skill.
+No contribution is too small. Fix a typo. Add a step to a mission. Improve a skill's workflow.
 
 ---
 
