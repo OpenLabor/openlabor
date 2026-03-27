@@ -1,4 +1,261 @@
 {
-  "employees": ["accountant", "analyst", "brand-advisor", "cmo", "coo", "cto", "designer", "email-secretary", "hr", "lead-finder", "logo-designer", "sdr", "social-manager", "writer", "x-manager"],
-  "skills": ["airtable-manager", "animate-story", "cold-outreach", "competitor-analysis", "content-humanizer", "content-summarizer", "data-analyst", "domain-checker", "generate-video", "google-calendar", "image-generator", "instagram-manager", "lead-qualification", "linkedin-manager", "logo-maker", "marketing-psychology", "news-trend-monitor", "prompt-engineering", "reddit-manager", "self-improving-agent", "seo-optimization", "stripe-manager", "web-research", "x-strategy", "youtube-manager"]
+  "employees": [
+    {
+      "slug": "accountant",
+      "name": "Penny",
+      "role": "Accountant",
+      "department": "Finance",
+      "tagline": "Your books, always clean"
+    },
+    {
+      "slug": "analyst",
+      "name": "Derek",
+      "role": "Data Analyst",
+      "department": "Data",
+      "tagline": "Finds the insight you missed"
+    },
+    {
+      "slug": "brand-advisor",
+      "name": "Brandon",
+      "role": "Domain & Brand Advisor",
+      "department": "Marketing",
+      "tagline": "Finds the perfect name before someone else does"
+    },
+    {
+      "slug": "cmo",
+      "name": "Madison",
+      "role": "CMO",
+      "department": "Marketing",
+      "tagline": "Runs your entire marketing engine"
+    },
+    {
+      "slug": "coo",
+      "name": "Oliver",
+      "role": "COO",
+      "department": "Operations",
+      "tagline": "Runs ops so you don't have to"
+    },
+    {
+      "slug": "cto",
+      "name": "Travis",
+      "role": "CTO",
+      "department": "Engineering",
+      "tagline": "Ships code while you sleep"
+    },
+    {
+      "slug": "designer",
+      "name": "Daisy",
+      "role": "Designer",
+      "department": "Design",
+      "tagline": "Designs like it has taste"
+    },
+    {
+      "slug": "email-secretary",
+      "name": "Reed",
+      "role": "Email Secretary",
+      "department": "Operations",
+      "tagline": "Inbox zero, every single day"
+    },
+    {
+      "slug": "hr",
+      "name": "Holly",
+      "role": "HR Manager",
+      "department": "HR",
+      "tagline": "Hires faster than recruiters"
+    },
+    {
+      "slug": "lead-finder",
+      "name": "Chase",
+      "role": "Lead Finder",
+      "department": "Sales",
+      "tagline": "Fills your pipeline while you sleep"
+    },
+    {
+      "slug": "logo-designer",
+      "name": "Logan",
+      "role": "Logo Designer",
+      "department": "Design",
+      "tagline": "Crafts logos that stick"
+    },
+    {
+      "slug": "sdr",
+      "name": "Hunter",
+      "role": "SDR",
+      "department": "Sales",
+      "tagline": "Books meetings you never could"
+    },
+    {
+      "slug": "social-manager",
+      "name": "Sierra",
+      "role": "Social Media Manager",
+      "department": "Marketing",
+      "tagline": "Grows your following on autopilot"
+    },
+    {
+      "slug": "writer",
+      "name": "Penelope",
+      "role": "Content Writer",
+      "department": "Content",
+      "tagline": "Writes better than your last hire"
+    },
+    {
+      "slug": "x-manager",
+      "name": "Xavier",
+      "role": "X Manager",
+      "department": "Marketing",
+      "tagline": "Turns your X into a growth machine"
+    }
+  ],
+  "skills": [
+    {
+      "slug": "airtable-manager",
+      "name": "Airtable Manager",
+      "description": "Create, read, update, and delete records in Airtable bases — manage data, CRM, and project tracking via Composio",
+      "category": "Productivity"
+    },
+    {
+      "slug": "animate-story",
+      "name": "Animate Story",
+      "description": "Turn photos and ideas into anime-style visual stories — generate scene-by-scene illustrated narratives",
+      "category": "Content Creation"
+    },
+    {
+      "slug": "cold-outreach",
+      "name": "Cold Outreach",
+      "description": "Execute cold outreach campaigns",
+      "category": "Sales"
+    },
+    {
+      "slug": "competitor-analysis",
+      "name": "Competitor Analysis",
+      "description": "Monitor competitor activities",
+      "category": "Strategy"
+    },
+    {
+      "slug": "content-humanizer",
+      "name": "Content Humanizer",
+      "description": "Remove AI fingerprints from content — make every post sound authentically human and engaging",
+      "category": "Content Creation"
+    },
+    {
+      "slug": "content-summarizer",
+      "name": "Content Summarizer",
+      "description": "Summarize any content — URLs, articles, PDFs, videos, documents — into actionable formats",
+      "category": "Content Creation"
+    },
+    {
+      "slug": "data-analyst",
+      "name": "Data Analyst",
+      "description": "Analyze data, create reports, identify trends, and deliver actionable insights",
+      "category": "Analytics"
+    },
+    {
+      "slug": "domain-checker",
+      "name": "domain-checker",
+      "description": "",
+      "category": ""
+    },
+    {
+      "slug": "generate-video",
+      "name": "Generate Video Presentation",
+      "description": "Create animated pitch and explainer videos with AI voiceover",
+      "category": "Content Creation"
+    },
+    {
+      "slug": "google-calendar",
+      "name": "Google Calendar",
+      "description": "Create events, check availability, manage schedules, and coordinate meetings via Composio",
+      "category": "Productivity"
+    },
+    {
+      "slug": "image-generator",
+      "name": "Image Generator",
+      "description": "Generate images from text prompts using Flux, Imagen, and other AI models",
+      "category": "Content Creation"
+    },
+    {
+      "slug": "instagram-manager",
+      "name": "Instagram Manager",
+      "description": "Publish posts, reels, carousels, manage comments, DMs, and track analytics on Instagram via Composio",
+      "category": "Social Media"
+    },
+    {
+      "slug": "lead-qualification",
+      "name": "Lead Qualification",
+      "description": "Score, qualify, and prioritize leads using BANT, MEDDIC, and custom criteria",
+      "category": "Sales"
+    },
+    {
+      "slug": "linkedin-manager",
+      "name": "LinkedIn Manager",
+      "description": "Create posts, share articles, manage comments, and track analytics on LinkedIn via Composio",
+      "category": "Social Media"
+    },
+    {
+      "slug": "logo-maker",
+      "name": "logo-maker",
+      "description": "Generate professional logomarks and wordmarks using AI image generation",
+      "category": ""
+    },
+    {
+      "slug": "marketing-psychology",
+      "name": "Marketing Psychology",
+      "description": "Apply behavioral psychology and persuasion frameworks to craft content that drives action",
+      "category": "Marketing"
+    },
+    {
+      "slug": "news-trend-monitor",
+      "name": "News & Trend Monitor",
+      "description": "Monitor news, trends, and industry developments to find content opportunities",
+      "category": "Research"
+    },
+    {
+      "slug": "prompt-engineering",
+      "name": "Prompt Engineering",
+      "description": "Write better prompts for AI tools — structured, specific, and optimized for quality output",
+      "category": "Agent Intelligence"
+    },
+    {
+      "slug": "reddit-manager",
+      "name": "Reddit Manager",
+      "description": "Post, comment, search, and monitor subreddits for brand visibility and community engagement via Composio",
+      "category": "Social Media"
+    },
+    {
+      "slug": "self-improving-agent",
+      "name": "Self-Improving Agent",
+      "description": "Learn from mistakes, track corrections, and permanently improve performance across sessions",
+      "category": "Agent Intelligence"
+    },
+    {
+      "slug": "seo-optimization",
+      "name": "SEO Optimization",
+      "description": "Optimize content for search engines — keywords, meta tags, structure, and technical SEO",
+      "category": "Marketing"
+    },
+    {
+      "slug": "stripe-manager",
+      "name": "Stripe Manager",
+      "description": "Manage customers, invoices, subscriptions, payments, and billing via Stripe Composio connector",
+      "category": "Finance"
+    },
+    {
+      "slug": "web-research",
+      "name": "Web Research",
+      "description": "Search the web for trending topics, competitor intel, and content ideas using Tavily AI search",
+      "category": "Research"
+    },
+    {
+      "slug": "x-strategy",
+      "name": "X Strategy",
+      "description": "Full X/Twitter growth engine — viral tweets, threads, engagement, analytics, and audience building via Composio",
+      "category": "Marketing"
+    },
+    {
+      "slug": "youtube-manager",
+      "name": "YouTube Manager",
+      "description": "Upload videos, manage playlists, moderate comments, track analytics, and grow your YouTube channel via Composio",
+      "category": "Social Media"
+    }
+  ]
 }

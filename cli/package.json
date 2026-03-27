@@ -15,6 +15,22 @@
     "registry.json",
     "CHANGELOG.md"
   ],
+  "scripts": {
+    "gen:registry": "node scripts/generate-registry.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenLabor/openlabor.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/OpenLabor/openlabor#readme",
+  "author": "OpenLabor",
+  "bugs": {
+    "url": "https://github.com/OpenLabor/openlabor/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },

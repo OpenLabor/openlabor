@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# openlabor setup — register skills in CLAUDE.md
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "openlabor setup"
+echo ""
+
+# Generate registry if node is available
+if command -v node &>/dev/null; then
+  if [ -f "$SCRIPT_DIR/cli/scripts/generate-registry.js" ]; then
+    node "$SCRIPT_DIR/cli/scripts/generate-registry.js" 2>/dev/null || true
+  fi
+fi
+
+# List available skills
+echo "Available skills:"
+for skill_dir in "$SCRIPT_DIR"/skills/*/; do
+  if [ -f "$skill_dir/SKILL.md" ]; then
+    name=$(basename "$skill_dir")
+    echo "  /$name"
+  fi
+done
+
+echo ""
+echo "Available employees:"
+for emp_dir in "$SCRIPT_DIR"/employees/*/; do
+  if [ -f "$emp_dir/EMPLOYEE.md" ]; then
+    name=$(basename "$emp_dir")
+    echo "  /$name"
+  fi
+done
+
+echo ""
+echo "Setup complete. Add these skills to your CLAUDE.md."
+echo "Or use the CLI: npx openlabor install skill <name>"

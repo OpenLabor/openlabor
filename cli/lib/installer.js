@@ -56,9 +56,15 @@ export function detectTarget(cwd) {
 /**
  * Build the content to write, with a header comment.
  */
-function buildInstallContent(raw, type, slug) {
+function buildInstallContent(raw, type, slug, metadata = {}) {
   const header = `<!-- Installed from openlabor ${type}: ${slug} | v${VERSION} -->\n`;
-  return header + raw;
+  let content = raw;
+
+  // Replace template variables
+  if (metadata.name) content = content.replace(/\{\{name\}\}/g, metadata.name);
+  if (metadata.role) content = content.replace(/\{\{role\}\}/g, metadata.role);
+
+  return header + content;
 }
 
 /**
@@ -183,7 +189,9 @@ export async function installSkill(name, targetName, cwd = process.cwd()) {
   }
 
   const { key, target } = resolveTarget(targetName, cwd);
-  const content = buildInstallContent(skill.raw, 'skill', skill.slug);
+  const content = buildInstallContent(skill.raw, 'skill', skill.slug, {
+    name: skill.name,
+  });
 
   if (target.mode === 'file') {
     const outPath = writeFileTarget(target, skill.slug, content, cwd);
@@ -205,7 +213,10 @@ export async function installEmployee(name, targetName, cwd = process.cwd()) {
   }
 
   const { key, target } = resolveTarget(targetName, cwd);
-  const content = buildInstallContent(employee.raw, 'employee', employee.slug);
+  const content = buildInstallContent(employee.raw, 'employee', employee.slug, {
+    name: employee.name,
+    role: employee.role,
+  });
 
   if (target.mode === 'file') {
     const outPath = writeFileTarget(target, employee.slug, content, cwd);

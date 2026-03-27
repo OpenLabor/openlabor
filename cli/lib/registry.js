@@ -67,13 +67,28 @@ export function parseFrontmatter(content) {
 }
 
 /**
- * Load the registry manifest (slugs only).
+ * Load the registry manifest.
  */
 function loadManifest() {
   if (existsSync(MANIFEST_PATH)) {
     return JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
   }
   return { employees: [], skills: [] };
+}
+
+/**
+ * List items from the manifest, handling both rich objects and legacy string arrays.
+ */
+function listFromManifest(type) {
+  const manifest = loadManifest();
+  if (!manifest) return [];
+  const items = manifest[type] || [];
+  return items.map(item => {
+    if (typeof item === 'string') {
+      return { slug: item, name: item };
+    }
+    return item;
+  });
 }
 
 /**
@@ -179,15 +194,15 @@ export function listEmployees() {
   if (isLocalAvailable()) {
     return listEmployeesLocal();
   }
-  // Remote mode: return stubs from manifest
-  const manifest = loadManifest();
-  return manifest.employees.map((slug) => ({
-    slug,
-    id: slug,
-    name: slug,
-    role: '',
-    department: '',
-    tagline: '',
+  // Remote mode: return rich data from manifest
+  const items = listFromManifest('employees');
+  return items.map((item) => ({
+    slug: item.slug,
+    id: item.slug,
+    name: item.name || item.slug,
+    role: item.role || '',
+    department: item.department || '',
+    tagline: item.tagline || '',
     skills: [],
     status: 'available',
     remote: true,
@@ -201,13 +216,13 @@ export function listSkills() {
   if (isLocalAvailable()) {
     return listSkillsLocal();
   }
-  // Remote mode: return stubs from manifest
-  const manifest = loadManifest();
-  return manifest.skills.map((slug) => ({
-    slug,
-    name: slug,
-    description: '',
-    category: '',
+  // Remote mode: return rich data from manifest
+  const items = listFromManifest('skills');
+  return items.map((item) => ({
+    slug: item.slug,
+    name: item.name || item.slug,
+    description: item.description || '',
+    category: item.category || '',
     roles: [],
     triggers: [],
     platforms: [],
@@ -230,8 +245,13 @@ export async function findEmployee(name) {
 
   // Remote: check manifest first, then fetch content
   const manifest = loadManifest();
-  const slug = manifest.employees.find((s) => s === needle);
-  if (!slug) return null;
+  const items = manifest.employees || [];
+  const found = items.find((item) => {
+    const s = typeof item === 'string' ? item : item.slug;
+    return s === needle;
+  });
+  if (!found) return null;
+  const slug = typeof found === 'string' ? found : found.slug;
 
   const content = await fetchRemoteContent('employee', slug);
   const { frontmatter, body } = parseFrontmatter(content);
@@ -265,8 +285,13 @@ export async function findSkill(name) {
 
   // Remote: check manifest first, then fetch content
   const manifest = loadManifest();
-  const slug = manifest.skills.find((s) => s === needle);
-  if (!slug) return null;
+  const items = manifest.skills || [];
+  const found = items.find((item) => {
+    const s = typeof item === 'string' ? item : item.slug;
+    return s === needle;
+  });
+  if (!found) return null;
+  const slug = typeof found === 'string' ? found : found.slug;
 
   const content = await fetchRemoteContent('skill', slug);
   const { frontmatter, body } = parseFrontmatter(content);
@@ -288,13 +313,11 @@ export async function findSkill(name) {
  * Fuzzy search across employees and skills (local only; remote shows message).
  */
 export function search(query) {
-  if (!isLocalAvailable()) {
-    return { remote: true, results: [] };
-  }
-
   const q = query.toLowerCase();
-  const employees = listEmployeesLocal();
-  const skills = listSkillsLocal();
+
+  // Use local data if available, otherwise fall back to manifest
+  const employees = isLocalAvailable() ? listEmployeesLocal() : listEmployees();
+  const skills = isLocalAvailable() ? listSkillsLocal() : listSkills();
 
   const score = (str) => {
     if (!str) return 0;
