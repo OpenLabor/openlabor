@@ -1,6 +1,6 @@
 {
   "name": "@openlabor/cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Browse and install OpenLabor AI employees and skills into Claude Code, Codex, Cursor, OpenCode, and more",
   "type": "module",
   "bin": {
@@ -13,7 +13,8 @@
     "lib/",
     "VERSION",
     "registry.json",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "README.md"
   ],
   "scripts": {
     "gen:registry": "node scripts/generate-registry.js"
@@ -34,6 +35,16 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["openlabor", "claude", "codex", "cursor", "opencode", "windsurf", "ai", "employees", "skills"],
+  "keywords": [
+    "openlabor",
+    "claude",
+    "codex",
+    "cursor",
+    "opencode",
+    "windsurf",
+    "ai",
+    "employees",
+    "skills"
+  ],
   "license": "MIT"
 }

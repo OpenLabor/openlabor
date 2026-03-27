@@ -15,43 +15,19 @@
 
 ---
 
-## Install — 30 seconds
-
-### Claude Code
-
-Open Claude Code and paste this:
-
-> Install openlabor: run **`git clone https://github.com/OpenLabor/openlabor.git ~/.claude/skills/openlabor`** then add an "openlabor" section to CLAUDE.md that lists the available skills from `~/.claude/skills/openlabor/skills/` and employees from `~/.claude/skills/openlabor/employees/`.
-
-All skills become slash commands. Try `/logo-maker`, `/seo-optimization`, or `/cold-outreach`.
-
-### Add to your repo (optional)
-
-> Add openlabor to this project: run **`cp -Rf ~/.claude/skills/openlabor .claude/skills/openlabor && rm -rf .claude/skills/openlabor/.git`** then add an "openlabor" section to this project's CLAUDE.md listing the available skills and employees.
-
-Committed to your repo — teammates get it on `git clone`. Everything lives inside `.claude/`.
-
-### Codex, Cursor, OpenCode, Windsurf
+## Install
 
 ```bash
-npx openlabor list skills                                    # browse 25+ skills
-npx openlabor list employees                                 # browse 15 AI employees
-npx openlabor search "logo"                                  # search across both
-npx openlabor install skill logo-maker                       # auto-detects your tool
-npx openlabor install skill logo-maker --target cursor       # .cursor/rules/logo-maker.mdc
-npx openlabor install skill logo-maker --target codex        # codex.md (appended)
-npx openlabor install skill logo-maker --target opencode     # opencode.md (appended)
-npx openlabor install skill logo-maker --target windsurf     # .windsurfrules (appended)
-npx openlabor install employee cto                           # install an AI persona
+npx openlabor install skill logo-maker      # works with Claude Code, Cursor, Codex, OpenCode, Windsurf
+npx openlabor install employee cto          # install an AI persona
 ```
 
-### Updates
+That's it. Auto-detects your tool. Browse what's available:
 
 ```bash
-openlabor update                    # upgrade to latest
-openlabor outdated                  # list skills with older versions
-openlabor update-skills             # re-install all to latest
-openlabor config auto_upgrade true  # never think about it again
+npx openlabor list skills                   # 25+ skills
+npx openlabor list employees                # 15 AI employees
+npx openlabor search "logo"                 # search across both
 ```
 
 ---
