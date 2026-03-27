@@ -1,6 +1,6 @@
 {
-  "name": "openlabor",
-  "version": "1.0.0",
+  "name": "@openlabor/cli",
+  "version": "1.0.2",
   "description": "Browse and install OpenLabor AI employees and skills into Claude Code, Codex, Cursor, OpenCode, and more",
   "type": "module",
   "bin": {
