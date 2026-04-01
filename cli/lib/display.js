@@ -180,6 +180,20 @@ export function printHelp() {
   console.log(`  ${colors.yellow}search <query>${colors.reset}                         Search employees and skills`);
   console.log(`  ${colors.yellow}targets${colors.reset}                                List supported install targets`);
   console.log('');
+  console.log(`${colors.bold}Pilot (dispatch & control your team):${colors.reset}`);
+  console.log(`  ${colors.yellow}login <api-key>${colors.reset}                        Connect to your org`);
+  console.log(`  ${colors.yellow}logout${colors.reset}                                 Clear stored credentials`);
+  console.log(`  ${colors.yellow}whoami${colors.reset}                                 Show current login info`);
+  console.log(`  ${colors.yellow}team${colors.reset}                                   List your org's live employees`);
+  console.log(`  ${colors.yellow}ask "<message>"${colors.reset}                        New conversation (auto-routes to best employee)`);
+  console.log(`  ${colors.yellow}ask <employee> "<message>"${colors.reset}              New conversation with specific employee`);
+  console.log(`  ${colors.yellow}chat "<message>"${colors.reset}                       Continue last conversation`);
+  console.log(`  ${colors.yellow}chat <employee> "<message>"${colors.reset}             Continue with specific employee`);
+  console.log(`  ${colors.yellow}history${colors.reset}                                List all conversations`);
+  console.log(`  ${colors.yellow}history <employee>${colors.reset}                    List employee's conversations`);
+  console.log(`  ${colors.yellow}tasks <employee>${colors.reset}                       List scheduled tasks`);
+  console.log(`  ${colors.yellow}run <task-id>${colors.reset}                          Run a scheduled task now`);
+  console.log('');
   console.log(`${colors.bold}Update & Config:${colors.reset}`);
   console.log(`  ${colors.yellow}version${colors.reset}                                Show version and install info`);
   console.log(`  ${colors.yellow}update${colors.reset}                                 Update openlabor to latest`);
@@ -199,16 +213,18 @@ export function printHelp() {
   console.log(`${colors.dim}If --target is omitted, the tool auto-detects based on config files in your project.${colors.reset}`);
   console.log('');
   console.log(`${colors.bold}Examples:${colors.reset}`);
+  console.log(`  ${colors.dim}# Browse & install${colors.reset}`);
   console.log(`  openlabor list employees`);
-  console.log(`  openlabor list skills`);
-  console.log(`  openlabor install skill airtable-manager`);
   console.log(`  openlabor install skill logo-maker --target cursor`);
-  console.log(`  openlabor install employee cto --target codex`);
   console.log(`  openlabor search "social media"`);
-  console.log(`  openlabor targets`);
-  console.log(`  openlabor version`);
-  console.log(`  openlabor config auto_upgrade true`);
-  console.log(`  openlabor outdated`);
+  console.log('');
+  console.log(`  ${colors.dim}# Pilot your team${colors.reset}`);
+  console.log(`  openlabor login ABCDEF1234567890ABCDEF1234567890`);
+  console.log(`  openlabor team`);
+  console.log(`  openlabor ask "Draft 3 tweet threads about our launch"`);
+  console.log(`  openlabor chat "Make the second one more casual"`);
+  console.log(`  openlabor ask cto "Review our auth module"`);
+  console.log(`  openlabor history`);
   console.log('');
 }
 
@@ -237,6 +253,131 @@ export function printConfig(config) {
     console.log(`  ${colors.yellow}${key}${colors.reset}: ${val}`);
   }
   console.log('');
+}
+
+// ─── Pilot display functions ──────────────────────────────────
+
+/**
+ * Print live org employees (from API, not registry).
+ */
+export function printOrgEmployees(agents) {
+  if (!agents || agents.length === 0) {
+    console.log(`${colors.yellow}No employees found in your org.${colors.reset}`);
+    return;
+  }
+
+  const cols = [
+    { label: 'NAME', width: 16 },
+    { label: 'ROLE', width: 24 },
+    { label: 'DEPARTMENT', width: 16 },
+    { label: 'SKILLS', width: 40 },
+  ];
+
+  const rows = agents
+    .filter(a => a.status !== 'fired')
+    .map((a) => {
+      const skills = Array.isArray(a.skills) ? a.skills.slice(0, 3).join(', ') : '';
+      return [
+        `${colors.bold}${a.custom_name || a.name || a.template_id || a.id}${colors.reset}`,
+        a.role || '',
+        `${colors.cyan}${a.department || ''}${colors.reset}`,
+        `${colors.dim}${skills}${colors.reset}`,
+      ];
+    });
+
+  console.log('');
+  console.log(`${colors.bold}${colors.magenta}Your Employees${colors.reset}  ${colors.dim}(${rows.length} active)${colors.reset}`);
+  console.log('');
+  printTable(cols, rows);
+  console.log('');
+  console.log(`${colors.dim}Ask: openlabor ask <name> "your message"${colors.reset}`);
+  console.log('');
+}
+
+/**
+ * Print dispatch/reply result (chat response).
+ */
+export function printDispatchResult(result) {
+  console.log('');
+  console.log(`${colors.green}${colors.bold}${result.employeeName}${colors.reset} ${colors.dim}(${result.role})${colors.reset}`);
+  console.log(`${colors.dim}Session: ${result.sessionId}${colors.reset}`);
+  console.log(`${colors.dim}${'─'.repeat(60)}${colors.reset}`);
+  console.log('');
+
+  if (result.reply) {
+    console.log(result.reply);
+  } else {
+    console.log(`${colors.yellow}No reply yet.${colors.reset} The employee may still be processing.`);
+  }
+  console.log('');
+  console.log(`${colors.dim}Continue: openlabor reply ${result.employeeName} "your follow-up"${colors.reset}`);
+  console.log('');
+
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify(result));
+  }
+}
+
+/**
+ * Print history for an employee — sessions from API + local.
+ */
+export function printHistory(result) {
+  console.log('');
+  console.log(`${colors.bold}Conversations${colors.reset}  ${colors.dim}${result.employeeName}${colors.reset}`);
+  console.log('');
+
+  const hasSessions = result.sessions && result.sessions.length > 0;
+  const hasLocal = result.localSession;
+
+  if (!hasSessions && !hasLocal) {
+    console.log(`${colors.yellow}No conversations yet.${colors.reset} Start one with: ${colors.dim}openlabor ask ${result.employeeName} "your message"${colors.reset}`);
+  } else {
+    if (hasLocal) {
+      console.log(`  ${colors.green}latest${colors.reset}  ${colors.yellow}${result.localSession}${colors.reset}`);
+    }
+    if (hasSessions) {
+      for (const sess of result.sessions) {
+        const key = sess.sessionKey || sess.key || sess.id || 'unknown';
+        const date = sess.lastMessageAt || sess.createdAt || sess.updatedAt || '';
+        if (key !== result.localSession) {
+          console.log(`  ${colors.dim}${key}${colors.reset}  ${colors.dim}${date}${colors.reset}`);
+        }
+      }
+    }
+  }
+  console.log('');
+  console.log(`${colors.dim}Continue: openlabor chat ${result.employeeName} "your message"${colors.reset}`);
+  console.log('');
+
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify(result));
+  }
+}
+
+/**
+ * Print employee scheduled tasks.
+ */
+export function printEmployeeTasks(result) {
+  console.log('');
+  console.log(`${colors.bold}Scheduled Tasks${colors.reset}  ${colors.dim}${result.employeeName}${colors.reset}  ${colors.dim}(${result.tasks.length} total)${colors.reset}`);
+  console.log('');
+
+  if (result.tasks.length === 0) {
+    console.log(`${colors.yellow}No scheduled tasks.${colors.reset}`);
+  } else {
+    for (const task of result.tasks) {
+      const name = task.name || 'Unnamed';
+      const schedule = task.schedule?.expr || task.schedule || '';
+      console.log(`  ${colors.yellow}${task.id}${colors.reset}  ${colors.bold}${name}${colors.reset}  ${colors.dim}${schedule}${colors.reset}`);
+    }
+    console.log('');
+    console.log(`${colors.dim}Run now: openlabor run <task-id>${colors.reset}`);
+  }
+  console.log('');
+
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify(result));
+  }
 }
 
 /**

@@ -1,7 +1,7 @@
 {
   "name": "@openlabor/cli",
-  "version": "1.0.3",
-  "description": "Browse and install OpenLabor AI employees and skills into Claude Code, Codex, Cursor, OpenCode, and more",
+  "version": "2.0.0",
+  "description": "Browse, install, and pilot OpenLabor AI employees from Claude Code, Codex, Cursor, OpenCode, and more",
   "type": "module",
   "bin": {
     "openlabor": "./bin/openlabor.js",
@@ -11,6 +11,7 @@
   "files": [
     "bin/",
     "lib/",
+    "commands/",
     "VERSION",
     "registry.json",
     "CHANGELOG.md",
@@ -44,7 +45,11 @@
     "windsurf",
     "ai",
     "employees",
-    "skills"
+    "skills",
+    "pilot",
+    "dispatch",
+    "ai-agents",
+    "automation"
   ],
   "license": "MIT"
 }

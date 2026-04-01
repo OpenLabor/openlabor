@@ -256,6 +256,12 @@
       "name": "YouTube Manager",
       "description": "Upload videos, manage playlists, moderate comments, track analytics, and grow your YouTube channel via Composio",
       "category": "Social Media"
+    },
+    {
+      "slug": "openlabor",
+      "name": "OpenLabor",
+      "description": "Chat with your AI employees from the terminal — ask, chat, auto-route, and manage conversations",
+      "category": "Pilot"
     }
   ]
 }

@@ -5,24 +5,75 @@
 <h1 align="center">OpenLabor</h1>
 
 <p align="center">
-  <strong>Open source AI employees, skills, and missions. Install into Claude Code, Cursor, Codex, and more.</strong>
+  <strong>Open source AI employees. Browse, install, and pilot them from Claude Code, Cursor, Codex, and more.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/OpenLabor/openlabor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"></a>
+  <a href="https://www.npmjs.com/package/@openlabor/cli"><img src="https://img.shields.io/npm/v/@openlabor/cli.svg" alt="npm"></a>
   <a href="https://x.com/openlaborai"><img src="https://img.shields.io/badge/X-@openlaborai-black.svg?logo=x" alt="X"></a>
 </p>
 
 ---
 
-## Install
+## Two ways to use OpenLabor
+
+| | Pilot (account required) | Install (free, no account) |
+|---|---|---|
+| **What** | Chat with AI employees running on the platform | Copy skill workflows and employee personas into your coding tool as local prompts |
+| **How** | `openlabor ask madison "task"` | `openlabor install skill logo-maker` |
+| **Runs where** | On the OpenLabor platform (powered by OpenClaw) | Locally in your coding tool |
+| **Needs account** | Yes — API key from your dashboard | No |
+| **Employee actually works** | Yes — uses tools, APIs, skills, produces real output | No — your coding tool roleplays the persona |
+| **Best for** | Teams using OpenLabor to automate work | Developers trying workflows before signing up |
+
+---
+
+## Pilot your team
+
+Chat with your AI employees from the terminal. They run on the platform with all their skills, tools, and API credentials already configured.
+
+```bash
+npm install -g @openlabor/cli
+
+# Connect (one-time — get your key from Settings > API Keys)
+openlabor login <api-key>
+
+# See who's available
+openlabor team
+
+# Send a message (auto-routes to best employee)
+openlabor ask "Draft 3 tweet threads about our launch"
+
+# Continue the conversation
+openlabor chat "Make the second one more casual"
+
+# Message a specific employee
+openlabor ask cto "Review our auth module"
+
+# View conversations
+openlabor history
+openlabor history madison
+
+# Scheduled tasks
+openlabor tasks madison
+openlabor run <task-id>
+```
+
+Works from any coding tool that can run shell commands — Claude Code, Cursor, Codex, Windsurf, or just your terminal.
+
+---
+
+## Install skills for free
+
+Browse and install employee personas and skill workflows as local prompts. No account needed.
 
 ```bash
 npx openlabor install skill logo-maker      # works with Claude Code, Cursor, Codex, OpenCode, Windsurf
 npx openlabor install employee cto          # install an AI persona
 ```
 
-That's it. Auto-detects your tool. Browse what's available:
+Auto-detects your tool. Browse what's available:
 
 ```bash
 npx openlabor list skills                   # 25+ skills
@@ -30,9 +81,7 @@ npx openlabor list employees                # 15 AI employees
 npx openlabor search "logo"                 # search across both
 ```
 
----
-
-## Quick start
+### Quick start
 
 ```
 You:    I need a logo for my new project
@@ -151,6 +200,42 @@ triggers:
 # Step 4: Generate with Google Imagen
 # Step 5: Present and Compare
 # Step 6: Refine
+```
+
+---
+
+## All commands
+
+```bash
+# Pilot (requires account)
+openlabor login <api-key>                        # connect to your org
+openlabor login <api-key> --url <url>            # connect to self-hosted instance
+openlabor logout                                 # clear credentials
+openlabor whoami                                 # show current login
+openlabor team                                   # list your live employees
+openlabor ask "<message>"                        # auto-routes to best employee, new conversation
+openlabor ask <employee> "<message>"             # new conversation with specific employee
+openlabor chat "<message>"                       # continue last conversation
+openlabor chat <employee> "<message>"            # continue with specific employee
+openlabor history                                # list all conversations
+openlabor history <employee>                     # list employee's conversations
+openlabor tasks <employee>                       # list scheduled tasks
+openlabor run <task-id>                          # run a scheduled task now
+
+# Install (free, no account)
+openlabor list employees                         # browse employees
+openlabor list skills                            # browse skills
+openlabor search <query>                         # search across both
+openlabor install employee <name> [--target t]   # install a persona
+openlabor install skill <name> [--target t]      # install a workflow
+openlabor targets                                # list supported tools
+
+# Maintenance
+openlabor version                                # show version
+openlabor update                                 # upgrade CLI
+openlabor outdated                               # list stale installs
+openlabor update-skills                          # re-install all to latest
+openlabor config <key> <value>                   # set config
 ```
 
 ---
