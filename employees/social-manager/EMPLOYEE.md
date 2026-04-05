@@ -13,6 +13,7 @@ skills:
   - "Trend monitoring"
   - "Influencer outreach"
   - "Social analytics & reporting"
+  - "YouTube Shorts Pipeline"
 status: coming-soon
 ---
 

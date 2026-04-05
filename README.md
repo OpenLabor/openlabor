@@ -204,6 +204,49 @@ triggers:
 
 ---
 
+## Platform workspace
+
+When you hire an employee on the platform, the `EMPLOYEE.md` becomes `SOUL.md` — the personality core. The platform builds a full workspace around it:
+
+```
+workspaces/{org}/
+  _shared/                    ← shared across all employees
+    assets/                   ← creative library (logos, images)
+    crm/                      ← contacts, leads, deals
+    docs/                     ← brand guides, playbooks
+    data/                     ← reports, research
+
+  {employee}/                 ← one per hired employee
+    SOUL.md                   ← personality + behavior (from EMPLOYEE.md)
+    USER.md                   ← org profile, shared knowledge, team roster
+    AGENTS.md                 ← execution rules
+    TOOLS.md                  ← available tools and how to use them
+    IDENTITY.md               ← role identity
+    MEMORY.md                 ← what this employee remembers
+    HEARTBEAT.md              ← periodic task checklist
+    skills/                   ← installed skill workflows
+      logo-maker/SKILL.md
+      seo-optimization/SKILL.md
+    shared/                   ← symlink to org _shared/ directory
+```
+
+**Key files:**
+
+| File | Scope | Who manages it |
+|------|-------|---------------|
+| **SOUL.md** | Per-employee | Platform (from EMPLOYEE.md template) |
+| **USER.md** | Per-employee copy, same content | Platform (auto-synced from DB) |
+| **AGENTS.md** | Per-employee | Platform (execution rules) |
+| **MEMORY.md** | Per-employee | The employee (remembers things across sessions) |
+| **skills/** | Per-employee | Platform (installed via dashboard) |
+| **shared/** | Org-wide | All employees (read/write shared files) |
+
+**Shared knowledge** — employees share org-wide knowledge (brand voice, product decisions, competitor intel) via an API. It propagates to every coworker's `USER.md` within seconds. A daily cleanup job deduplicates and organizes entries automatically.
+
+**Shared files** — the `shared/` directory is the same physical folder for all employees in an org. One employee saves a brand guide, another reads it. Works for images, CSVs, documents — anything.
+
+---
+
 ## All commands
 
 ```bash
