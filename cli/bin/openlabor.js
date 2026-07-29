@@ -8,6 +8,8 @@ import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallTy
 import { loadConfig, saveConfig, CONFIG_FILE } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
 import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey } from '../lib/pilot.js';
+import { browserLogin } from '../lib/browser-login.js';
+import { upload, download } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -208,17 +210,30 @@ async function main() {
         else if ((loginArgs[i] === '--url' || loginArgs[i] === '-u') && loginArgs[i + 1]) { apiUrl = loginArgs[++i]; }
         else if (!apiKey && !loginArgs[i].startsWith('-')) { apiKey = loginArgs[i]; }
       }
+      // No key given → browser login. This is the default path: it always mints
+      // a workspace key, whereas hand-copying from the settings page is how
+      // people ended up with an employee-scoped key that 403s on `team`.
+      let loginResult;
       if (!apiKey) {
-        console.error(`${colors.red}Error:${colors.reset} Missing API key.`);
-        console.error(`Usage: ${colors.dim}openlabor login <api-key>${colors.reset}`);
-        console.error(`Get your key from: ${colors.dim}Settings → API Keys${colors.reset} in your dashboard.`);
-        process.exit(1);
+        loginResult = await browserLogin(apiUrl, ({ userCode, verificationUrl, opened }) => {
+          console.log('');
+          console.log(`  Confirmation code: ${colors.bold}${userCode}${colors.reset}`);
+          console.log('');
+          console.log(opened
+            ? `${colors.dim}Opened your browser. Approve the code there.${colors.reset}`
+            : `Open this URL to approve: ${colors.dim}${verificationUrl}${colors.reset}`);
+          console.log(`${colors.dim}Waiting…  (Ctrl-C to cancel · openlabor login --key <api-key> to paste one instead)${colors.reset}`);
+        }).catch((err) => {
+          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
+          process.exit(1);
+        });
+      } else {
+        // Resolve org and URL from the API key
+        loginResult = await resolveApiKey(apiKey, apiUrl).catch((err) => {
+          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
+          process.exit(1);
+        });
       }
-      // Resolve org and URL from the API key
-      const loginResult = await resolveApiKey(apiKey, apiUrl).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
       saveCredentials(loginResult);
       console.log(`${colors.green}Logged in!${colors.reset}`);
       console.log(`  Org:      ${colors.bold}${loginResult.company_name || loginResult.company_id}${colors.reset}`);
@@ -359,6 +374,55 @@ async function main() {
         });
         printHistory(histResult);
       }
+      break;
+    }
+
+    case 'upload': {
+      // openlabor upload <employee> <path> [--dir <subdir>] [--overwrite]
+      // Employee first, like every other pilot command.
+      const upEmployee = sub;
+      const upPath = rest[0];
+      let upDir = '';
+      let upOverwrite = false;
+      for (let i = 1; i < rest.length; i++) {
+        if (rest[i] === '--dir' && rest[i + 1]) upDir = rest[++i];
+        else if (rest[i] === '--overwrite') upOverwrite = true;
+      }
+      if (!upEmployee || !upPath) {
+        console.error(`${colors.red}Error:${colors.reset} Usage: ${colors.dim}openlabor upload <employee> <file-or-dir> [--dir <subdir>] [--overwrite]${colors.reset}`);
+        process.exit(1);
+      }
+      const upRes = await upload(upEmployee, upPath, {
+        dir: upDir,
+        overwrite: upOverwrite,
+        onFile: ({ rel, status, why }) => {
+          if (status === 'ok') console.log(`  ${colors.green}✓${colors.reset} ${rel}`);
+          else if (status === 'skipped') console.log(`  ${colors.dim}– ${rel}${colors.reset}`);
+          else console.log(`  ${colors.red}✗${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
+        },
+      }).catch((err) => {
+        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
+        process.exit(1);
+      });
+      console.log('');
+      console.log(`${colors.green}${upRes.uploaded} file(s)${colors.reset} → ${colors.bold}${upRes.employee.custom_name || upRes.employee.template_id}${colors.reset}`);
+      if (upRes.skipped.length) console.log(`${colors.dim}${upRes.skipped.length} skipped${colors.reset}`);
+      if (upRes.failed.length) console.log(`${colors.yellow}${upRes.failed.length} failed${colors.reset}`);
+      break;
+    }
+
+    case 'download': {
+      // openlabor download <employee> [dest.zip]
+      const dlEmployee = sub;
+      if (!dlEmployee) {
+        console.error(`${colors.red}Error:${colors.reset} Usage: ${colors.dim}openlabor download <employee> [dest.zip]${colors.reset}`);
+        process.exit(1);
+      }
+      const dlRes = await download(dlEmployee, rest[0]).catch((err) => {
+        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
+        process.exit(1);
+      });
+      console.log(`${colors.green}Downloaded${colors.reset} ${colors.bold}${dlRes.path}${colors.reset} ${colors.dim}(${(dlRes.bytes / 1048576).toFixed(1)} MB)${colors.reset}`);
       break;
     }
 

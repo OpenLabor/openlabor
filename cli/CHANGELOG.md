@@ -1,5 +1,37 @@
 # Changelog
 
+## [2.0.1] - 2026-07-29
+
+### Fixed
+
+- **Pilot mode now works at all.** Every pilot command called `/v1/*`, an API surface that was never
+  built — `openlabor login` 404'd on its first request, and with it `ask`, `chat`, `history`, `team`,
+  `tasks` and `run`. They now call the endpoints that exist (`/api/org`, `/api/employees`,
+  `/api/employees/:id/chat/:sessionId`, `/api/crons/tasks/...`). Shipped broken in 2.0.0.
+- **`openlabor update` actually updates.** It printed `npm install -g openlabor@latest` and returned
+  without doing anything — and that package name is not ours and does not exist on npm. It now runs
+  the install itself, against `@openlabor/cli`.
+
+### Added
+
+- **`openlabor login` with no argument opens your browser.** You confirm a short code in the
+  dashboard and the CLI receives a workspace key. Pasting a key by hand still works via
+  `openlabor login --key <api-key>`, but it is no longer the default: the settings page lists both
+  workspace and per-employee keys, and an employee key is rejected on org-wide commands.
+- **`openlabor upload <employee> <file-or-dir>`** — send documents, briefs or brand assets straight
+  into an employee's workspace, a folder at a time. Skips the files OpenLabor generates
+  (`SOUL.md`, `AGENTS.md`, …) so an import can never overwrite who an employee is, and refuses to
+  replace existing files unless you pass `--overwrite`.
+- **`openlabor download <employee> [dest.zip]`** — pull an employee's whole workspace as a zip, in
+  one request.
+- **`ol` as a shorthand for `openlabor`.** Same command, fewer keystrokes.
+
+### Changed
+
+- **Help rewritten around the two things this CLI does.** The catalog commands (`list`, `install`,
+  `search`) copy prompts into your editor; they do not hire anyone. That is now stated where people
+  read it, next to the commands that act on the employees actually working in your workspace.
+
 ## [2.0.0] - 2026-04-01
 
 ### Added

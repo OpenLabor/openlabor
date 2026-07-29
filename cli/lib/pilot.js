@@ -57,7 +57,7 @@ export async function resolveApiKey(apiKey, apiUrl) {
 
   let org;
   try {
-    org = await client.get('/v1/org');
+    org = await client.get('/api/org');
   } catch (err) {
     if (err.status === 401) {
       throw new Error('Invalid API key. Check your key and try again.');
@@ -89,7 +89,7 @@ function getClient() {
  */
 export async function listOrgEmployees() {
   const { client } = getClient();
-  return client.get('/v1/employees');
+  return client.get('/api/employees');
 }
 
 /**
@@ -99,10 +99,10 @@ export async function getEmployee(idOrName) {
   const { client } = getClient();
 
   try {
-    return await client.get(`/v1/employees/${encodeURIComponent(idOrName)}`);
+    return await client.get(`/api/employees/${encodeURIComponent(idOrName)}`);
   } catch (err) {
     if (err.status === 404) {
-      const employees = await client.get('/v1/employees');
+      const employees = await client.get('/api/employees');
       const query = idOrName.toLowerCase();
       const match = employees.find(e =>
         e.custom_name?.toLowerCase() === query ||
@@ -129,7 +129,7 @@ export async function ask(employeeIdOrName, message) {
     employee = await getEmployee(employeeIdOrName);
   } else {
     // Auto-route
-    const employees = await client.get('/v1/employees');
+    const employees = await client.get('/api/employees');
     employee = routeToEmployee(employees.filter(e => e.status !== 'fired'), message);
     routed = true;
   }
@@ -137,7 +137,7 @@ export async function ask(employeeIdOrName, message) {
   const sessionId = `cli-${Date.now()}`;
 
   const result = await client.post(
-    `/v1/employees/${employee.id}/chat/${sessionId}`,
+    `/api/employees/${employee.id}/chat/${sessionId}`,
     { message }
   );
 
@@ -186,7 +186,7 @@ export async function chat(employeeIdOrName, message) {
   }
 
   const result = await client.post(
-    `/v1/employees/${employee.id}/chat/${encodeURIComponent(sessionId)}`,
+    `/api/employees/${employee.id}/chat/${encodeURIComponent(sessionId)}`,
     { message }
   );
 
@@ -213,7 +213,7 @@ export async function history(employeeIdOrName) {
   if (employeeIdOrName) {
     const { client } = getClient();
     const employee = await getEmployee(employeeIdOrName);
-    const result = await client.get(`/v1/employees/${employee.id}/chat/sessions`);
+    const result = await client.get(`/api/employees/${employee.id}/chat/sessions`);
 
     // Also include locally tracked sessions
     const employeeKey = employee.template_id || employee.custom_name || employeeIdOrName;
@@ -237,7 +237,7 @@ export async function history(employeeIdOrName) {
 export async function listTasks(employeeIdOrName) {
   const { client } = getClient();
   const employee = await getEmployee(employeeIdOrName);
-  const tasks = await client.get(`/v1/employees/${employee.id}/tasks`);
+  const tasks = await client.get(`/api/crons/tasks/employee/${employee.id}`);
 
   return {
     employeeId: employee.id,
@@ -251,5 +251,5 @@ export async function listTasks(employeeIdOrName) {
  */
 export async function runTask(taskId) {
   const { client } = getClient();
-  return client.post(`/v1/tasks/${encodeURIComponent(taskId)}/run`, {});
+  return client.post(`/api/crons/tasks/${encodeURIComponent(taskId)}/run`, {});
 }

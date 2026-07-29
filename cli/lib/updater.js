@@ -13,6 +13,15 @@ const LAST_CHECK_FILE = join(CONFIG_DIR, 'last-update-check');
 const JUST_UPGRADED_FILE = join(CONFIG_DIR, 'just-upgraded-from');
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const REGISTRY_URL = 'https://raw.githubusercontent.com/OpenLabor/openlabor/main/cli/package.json';
+/**
+ * The published npm name. Must match package.json.
+ *
+ * This used to be spelled "openlabor" in the update instructions — a package
+ * that is not ours and, as of this writing, does not exist. Users following
+ * `openlabor update` got a 404, and had that name ever been squatted they would
+ * have installed a stranger's code globally on our own instruction.
+ */
+const PACKAGE_NAME = '@openlabor/cli';
 
 /**
  * Compare two semver strings. Returns true if a > b.
@@ -170,13 +179,27 @@ export async function performUpdate() {
 
   if (installType === 'npx') {
     console.log('\x1b[33mYou are running openlabor via npx — it always uses the latest version.\x1b[0m');
-    console.log('Just run: \x1b[36mnpx openlabor@latest\x1b[0m');
+    console.log(`Just run: \x1b[36mnpx ${PACKAGE_NAME}@latest\x1b[0m`);
     return;
   }
 
   if (installType === 'npm') {
-    console.log('\x1b[33mopenlabor is installed via npm.\x1b[0m');
-    console.log('Run: \x1b[36mnpm install -g openlabor@latest\x1b[0m');
+    // Actually perform the upgrade. Printing the command and exiting made
+    // `openlabor update` a no-op that looked like it had worked — and the
+    // command it printed named a package that does not exist.
+    const cmd = `npm install -g ${PACKAGE_NAME}@latest`;
+    console.log(`Running: \x1b[36m${cmd}\x1b[0m`);
+    console.log('');
+    try {
+      execSync(cmd, { stdio: 'inherit' });
+      console.log('');
+      console.log('\x1b[32m✓ Updated.\x1b[0m Run \x1b[36mopenlabor version\x1b[0m to confirm.');
+    } catch {
+      console.error('');
+      console.error('\x1b[31mUpdate failed.\x1b[0m If this is a permissions error, either re-run with');
+      console.error(`sudo, or reinstall with a user-writable npm prefix, then: \x1b[36m${cmd}\x1b[0m`);
+      process.exitCode = 1;
+    }
     return;
   }
 

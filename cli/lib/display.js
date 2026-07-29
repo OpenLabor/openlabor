@@ -167,21 +167,24 @@ export function printTargets(TARGETS) {
 
 export function printHelp() {
   console.log('');
-  console.log(`${colors.bold}openlabor${colors.reset} — Browse and install OpenLabor employees & skills into Claude Code, Codex, Cursor, OpenCode, and more`);
+  console.log(`${colors.bold}openlabor${colors.reset} — Pilot your AI employees from the terminal, and browse OpenLabor's prompt catalog`);
+  console.log(`${colors.dim}(shorthand: ${colors.reset}${colors.yellow}ol${colors.reset}${colors.dim})${colors.reset}`);
   console.log('');
   console.log(`${colors.bold}Usage:${colors.reset}`);
   console.log(`  openlabor <command> [options]`);
   console.log('');
-  console.log(`${colors.bold}Commands:${colors.reset}`);
-  console.log(`  ${colors.yellow}list employees${colors.reset}                         List all available employees`);
-  console.log(`  ${colors.yellow}list skills${colors.reset}                            List all available skills`);
-  console.log(`  ${colors.yellow}install employee <name> [--target <t>]${colors.reset}  Install an employee`);
-  console.log(`  ${colors.yellow}install skill <name> [--target <t>]${colors.reset}     Install a skill`);
-  console.log(`  ${colors.yellow}search <query>${colors.reset}                         Search employees and skills`);
-  console.log(`  ${colors.yellow}targets${colors.reset}                                List supported install targets`);
+  console.log(`${colors.bold}Catalog — browse OpenLabor's library and copy prompts into your editor${colors.reset}`);
+  console.log(`${colors.dim}  (These do NOT hire anyone. For your real team, see "Your team" below.)${colors.reset}`);
+  console.log(`  ${colors.yellow}list employees${colors.reset}                         Browse the catalog of employee roles`);
+  console.log(`  ${colors.yellow}list skills${colors.reset}                            Browse the catalog of skills`);
+  console.log(`  ${colors.yellow}install employee <name> [--target <t>]${colors.reset}  Copy a role's prompt into this project`);
+  console.log(`  ${colors.yellow}install skill <name> [--target <t>]${colors.reset}     Copy a skill's prompt into this project`);
+  console.log(`  ${colors.yellow}search <query>${colors.reset}                         Search the catalog`);
+  console.log(`  ${colors.yellow}targets${colors.reset}                                Editors you can install into`);
   console.log('');
-  console.log(`${colors.bold}Pilot (dispatch & control your team):${colors.reset}`);
-  console.log(`  ${colors.yellow}login <api-key>${colors.reset}                        Connect to your org`);
+  console.log(`${colors.bold}Your team — the employees actually working in your workspace${colors.reset}`);
+  console.log(`  ${colors.yellow}login${colors.reset}                                  Sign in via your browser`);
+  console.log(`  ${colors.yellow}login --key <api-key>${colors.reset}                  Sign in with a workspace API key instead`);
   console.log(`  ${colors.yellow}logout${colors.reset}                                 Clear stored credentials`);
   console.log(`  ${colors.yellow}whoami${colors.reset}                                 Show current login info`);
   console.log(`  ${colors.yellow}team${colors.reset}                                   List your org's live employees`);
@@ -191,8 +194,9 @@ export function printHelp() {
   console.log(`  ${colors.yellow}chat <employee> "<message>"${colors.reset}             Continue with specific employee`);
   console.log(`  ${colors.yellow}history${colors.reset}                                List all conversations`);
   console.log(`  ${colors.yellow}history <employee>${colors.reset}                    List employee's conversations`);
-  console.log(`  ${colors.yellow}tasks <employee>${colors.reset}                       List scheduled tasks`);
-  console.log(`  ${colors.yellow}run <task-id>${colors.reset}                          Run a scheduled task now`);
+  console.log(`  ${colors.yellow}upload <employee> <path>${colors.reset}               Send a file or folder to their workspace`);
+  console.log(`  ${colors.yellow}download <employee> [dest.zip]${colors.reset}         Get their whole workspace as a zip`);
+  console.log(`  ${colors.yellow}tasks <employee>${colors.reset} / ${colors.yellow}run <task-id>${colors.reset}       List scheduled tasks, then run one now`);
   console.log('');
   console.log(`${colors.bold}Update & Config:${colors.reset}`);
   console.log(`  ${colors.yellow}version${colors.reset}                                Show version and install info`);
@@ -219,7 +223,7 @@ export function printHelp() {
   console.log(`  openlabor search "social media"`);
   console.log('');
   console.log(`  ${colors.dim}# Pilot your team${colors.reset}`);
-  console.log(`  openlabor login ABCDEF1234567890ABCDEF1234567890`);
+  console.log(`  openlabor login`);
   console.log(`  openlabor team`);
   console.log(`  openlabor ask "Draft 3 tweet threads about our launch"`);
   console.log(`  openlabor chat "Make the second one more casual"`);
