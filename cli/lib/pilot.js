@@ -1,7 +1,6 @@
 import { requireAuth, saveLastSession, getLastSession } from './auth.js';
 import { createClient } from './api.js';
-
-const DEFAULT_API_URL = 'https://api.openlabor.ai';
+import { API_URL } from './config.js';
 
 // ─── Keyword → department/role routing table ─────────────────
 const ROUTE_RULES = [
@@ -51,9 +50,8 @@ function routeToEmployee(employees, message) {
 /**
  * Resolve an API key by calling the org endpoint.
  */
-export async function resolveApiKey(apiKey, apiUrl) {
-  const base = (apiUrl || DEFAULT_API_URL).replace(/\/+$/, '');
-  const client = createClient({ apiUrl: base, apiKey });
+export async function resolveApiKey(apiKey) {
+  const client = createClient({ apiUrl: API_URL, apiKey });
 
   let org;
   try {
@@ -62,12 +60,11 @@ export async function resolveApiKey(apiKey, apiUrl) {
     if (err.status === 401) {
       throw new Error('Invalid API key. Check your key and try again.');
     }
-    throw new Error(`Could not validate key against ${base}. ${err.message}`);
+    throw new Error(`Could not reach ${API_URL}. ${err.message}`);
   }
 
   return {
     api_key: apiKey,
-    api_url: base,
     company_id: org.id || null,
     company_name: org.name || null,
   };
@@ -79,7 +76,7 @@ export async function resolveApiKey(apiKey, apiUrl) {
 function getClient() {
   const creds = requireAuth();
   return {
-    client: createClient({ apiUrl: creds.api_url, apiKey: creds.api_key }),
+    client: createClient({ apiUrl: API_URL, apiKey: creds.api_key }),
     companyId: creds.company_id,
   };
 }

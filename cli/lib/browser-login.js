@@ -13,8 +13,7 @@
 
 import { execFile } from 'child_process';
 import { createClient } from './api.js';
-
-const DEFAULT_API_URL = 'https://api.openlabor.ai';
+import { API_URL } from './config.js';
 
 /** Open a URL in the user's default browser. Best-effort: never throws. */
 function openBrowser(url) {
@@ -39,18 +38,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *
  * Resolves to the same credential shape as resolveApiKey().
  */
-export async function browserLogin(apiUrl, onPrompt) {
-  const base = (apiUrl || DEFAULT_API_URL).replace(/\/+$/, '');
+export async function browserLogin(onPrompt) {
   // No key yet — /cli-auth/start and /cli-auth/poll are the two unauthenticated
   // endpoints in the API, for exactly this reason.
-  const client = createClient({ apiUrl: base, apiKey: '' });
+  const client = createClient({ apiUrl: API_URL, apiKey: '' });
 
   let start;
   try {
     start = await client.post('/cli-auth/start', {});
   } catch (err) {
     throw new Error(
-      `Could not reach ${base}. ${err.message}\n` +
+      `Could not reach ${API_URL}. ${err.message}\n` +
       `If this server predates browser login, use: openlabor login --key <api-key>`,
     );
   }
@@ -78,7 +76,6 @@ export async function browserLogin(apiUrl, onPrompt) {
     if (poll.status === 'approved') {
       return {
         api_key: poll.api_key,
-        api_url: base,
         company_id: poll.org_id || null,
         company_name: poll.org_name || null,
       };

@@ -28,6 +28,18 @@
 
 ### Changed
 
+- **`install employee` is now `install role`** (old spelling still works). It never hired anyone —
+  it copies a prompt file into your editor — and for anyone coming from the product, "install
+  employee" read like recruiting. Same for `list employees` → `list roles`.
+- **Prompt-file commands grouped under `prompts`**: `prompts outdated` and `prompts refresh`
+  (previously `outdated` and `update-skills`, both still working). `update` now unambiguously means
+  "update the CLI itself" — the word used to mean two different things depending on the suffix.
+- **The API address is a constant, not a setting.** It was declared twice (`pilot.js` and
+  `browser-login.js`), passed around as a parameter, exposed as `login --url`, and — worst of the
+  four — frozen into `~/.openlabor/credentials.json` at login time, so a future domain change would
+  have stranded every already-connected user on the old host with no readable error. It now lives in
+  one place (`lib/config.js`), and stored credentials no longer dictate where the CLI talks.
+  `OPENLABOR_API_URL` stays as an internal override for pointing a dev build at a local API.
 - **Help rewritten around the two things this CLI does.** The catalog commands (`list`, `install`,
   `search`) copy prompts into your editor; they do not hire anyone. That is now stated where people
   read it, next to the commands that act on the employees actually working in your workspace.

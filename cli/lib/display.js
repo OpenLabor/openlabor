@@ -82,7 +82,7 @@ export function printEmployees(employees) {
   console.log('');
   printTable(cols, rows);
   console.log('');
-  console.log(`${colors.dim}Install with: openlabor install employee <id>${colors.reset}`);
+  console.log(`${colors.dim}Copy into your editor with: openlabor install role <id>${colors.reset}`);
   console.log('');
 }
 
@@ -175,9 +175,9 @@ export function printHelp() {
   console.log('');
   console.log(`${colors.bold}Catalog — browse OpenLabor's library and copy prompts into your editor${colors.reset}`);
   console.log(`${colors.dim}  (These do NOT hire anyone. For your real team, see "Your team" below.)${colors.reset}`);
-  console.log(`  ${colors.yellow}list employees${colors.reset}                         Browse the catalog of employee roles`);
+  console.log(`  ${colors.yellow}list roles${colors.reset}                             Browse the catalog of employee roles`);
   console.log(`  ${colors.yellow}list skills${colors.reset}                            Browse the catalog of skills`);
-  console.log(`  ${colors.yellow}install employee <name> [--target <t>]${colors.reset}  Copy a role's prompt into this project`);
+  console.log(`  ${colors.yellow}install role <name> [--target <t>]${colors.reset}      Copy a role's prompt into this project`);
   console.log(`  ${colors.yellow}install skill <name> [--target <t>]${colors.reset}     Copy a skill's prompt into this project`);
   console.log(`  ${colors.yellow}search <query>${colors.reset}                         Search the catalog`);
   console.log(`  ${colors.yellow}targets${colors.reset}                                Editors you can install into`);
@@ -203,8 +203,8 @@ export function printHelp() {
   console.log(`  ${colors.yellow}update${colors.reset}                                 Update openlabor to latest`);
   console.log(`  ${colors.yellow}config${colors.reset}                                 Show current config`);
   console.log(`  ${colors.yellow}config <key> <value>${colors.reset}                   Set a config value`);
-  console.log(`  ${colors.yellow}outdated${colors.reset}                               List skills installed with older version`);
-  console.log(`  ${colors.yellow}update-skills${colors.reset}                          Re-install all openlabor-tracked skills`);
+  console.log(`  ${colors.yellow}prompts outdated${colors.reset}                       Prompts you installed that are behind`);
+  console.log(`  ${colors.yellow}prompts refresh${colors.reset}                        Re-install them at the latest version`);
   console.log('');
   console.log(`${colors.bold}Targets (--target / -t):${colors.reset}`);
   console.log(`  ${colors.cyan}claude${colors.reset}     Claude Code  → .claude/commands/<name>.md`);

@@ -5,6 +5,17 @@ import { homedir } from 'os';
 export const CONFIG_DIR = join(homedir(), '.openlabor');
 export const CONFIG_FILE = join(CONFIG_DIR, 'config.yaml');
 
+/**
+ * Where this CLI talks to. There is exactly one production API, so this is a
+ * constant, not something users configure — and it lives here alone so a future
+ * domain change is a one-line edit rather than a hunt through modules.
+ *
+ * OPENLABOR_API_URL exists for us, to point a build at a local API while
+ * developing. It is deliberately not a flag: an end user has no reason to aim
+ * this CLI somewhere else, and a wrong value is a confusing failure.
+ */
+export const API_URL = (process.env.OPENLABOR_API_URL || 'https://api.openlabor.ai').replace(/\/+$/, '');
+
 const DEFAULTS = {
   auto_upgrade: false,
   default_target: 'claude',

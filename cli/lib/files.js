@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync, statSync, readdirSync, existsSync } from '
 import { join, basename, relative, sep } from 'path';
 import { requireAuth } from './auth.js';
 import { createClient } from './api.js';
+import { API_URL } from './config.js';
 import { getEmployee } from './pilot.js';
 
 /** Files that are never worth moving between machines. */
@@ -25,8 +26,7 @@ const GENERATED = new Set([
 const MAX_BYTES = 25 * 1024 * 1024;
 
 function client() {
-  const creds = requireAuth();
-  return createClient({ apiUrl: creds.api_url, apiKey: creds.api_key });
+  return createClient({ apiUrl: API_URL, apiKey: requireAuth().api_key });
 }
 
 /** Every file under `dir`, depth-first, as {abs, rel} pairs. */
@@ -113,7 +113,7 @@ export async function download(employeeIdOrName, destPath) {
   // The workspace folder is named after template_id (custom hires carry their
   // own id there), which is what the API resolves paths against.
   const folder = employee.template_id || employee.id;
-  const url = `${creds.api_url.replace(/\/+$/, '')}/api/workspace/download?path=${encodeURIComponent(folder)}`;
+  const url = `${API_URL}/api/workspace/download?path=${encodeURIComponent(folder)}`;
 
   const res = await fetch(url, { headers: { 'X-API-Key': creds.api_key } });
   if (!res.ok) {

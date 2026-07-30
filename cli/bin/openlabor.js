@@ -5,7 +5,7 @@ import { installEmployee, installSkill, TARGETS } from '../lib/installer.js';
 import { printEmployees, printSkills, printSearchResults, printHelp, printTargets, printVersion, printConfig, printOutdated, printOrgEmployees, printDispatchResult, printHistory, printEmployeeTasks, colors } from '../lib/display.js';
 import { VERSION } from '../lib/version.js';
 import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallType, performUpdate } from '../lib/updater.js';
-import { loadConfig, saveConfig, CONFIG_FILE } from '../lib/config.js';
+import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
 import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
@@ -34,6 +34,25 @@ const shellUpdateOutput = checkForUpdateShell();
 // Non-blocking async update check fallback
 const updateCheckPromise = checkForUpdate();
 
+/** Re-install every prompt file this CLI put in your editor, at its latest version. */
+async function refreshPrompts() {
+  const outdated = scanOutdated();
+  if (outdated.length === 0) {
+    console.log(`${colors.green}All installed prompts are up to date.${colors.reset}`);
+    return;
+  }
+  console.log(`Re-installing ${outdated.length} prompt(s)...`);
+  console.log('');
+  for (const item of outdated) {
+    const install = item.type === 'skill' ? installSkill : installEmployee;
+    await install(item.slug, item.target).catch((err) => {
+      console.error(`${colors.red}Error reinstalling ${item.slug}:${colors.reset} ${err.message}`);
+    });
+  }
+  console.log('');
+  console.log(`${colors.green}Done.${colors.reset}`);
+}
+
 async function main() {
   let updateVersion = null;
 
@@ -47,16 +66,21 @@ async function main() {
   }
 
   switch (cmd) {
+    case 'catalog':
     case 'list': {
-      if (!sub || sub === 'employees') {
+      // "roles" is the accurate word: these are prompt templates you copy into
+      // an editor, not people you employ. "employees" stays as an alias so the
+      // command everyone already types keeps working.
+      if (!sub || sub === 'roles' || sub === 'employees') {
         const employees = listEmployees();
         printEmployees(employees);
       } else if (sub === 'skills') {
         const skills = listSkills();
         printSkills(skills);
       } else {
-        console.error(`${colors.red}Unknown list target:${colors.reset} "${sub}"`);
-        console.error(`Try: ${colors.dim}openlabor list employees${colors.reset} or ${colors.dim}openlabor list skills${colors.reset}`);
+        console.error(`${colors.red}Unknown catalog target:${colors.reset} "${sub}"`);
+        console.error(`Try: ${colors.dim}openlabor list roles${colors.reset} or ${colors.dim}openlabor list skills${colors.reset}`);
+        console.error(`${colors.dim}Looking for the employees working in your workspace? That's ${colors.reset}${colors.yellow}openlabor team${colors.reset}${colors.dim}.${colors.reset}`);
         process.exit(1);
       }
       break;
@@ -65,8 +89,9 @@ async function main() {
     case 'install': {
       if (!sub) {
         console.error(`${colors.red}Error:${colors.reset} Specify what to install.`);
-        console.error(`Usage: ${colors.dim}openlabor install employee <name>${colors.reset}`);
+        console.error(`Usage: ${colors.dim}openlabor install role <name>${colors.reset}`);
         console.error(`       ${colors.dim}openlabor install skill <name>${colors.reset}`);
+        console.error(`${colors.dim}This copies a prompt into your editor. To hire in your workspace, use the dashboard.${colors.reset}`);
         process.exit(1);
       }
 
@@ -88,7 +113,7 @@ async function main() {
         process.exit(1);
       }
 
-      if (sub === 'employee') {
+      if (sub === 'role' || sub === 'employee') {
         await installEmployee(name, targetName).catch((err) => {
           console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
           process.exit(1);
@@ -100,7 +125,7 @@ async function main() {
         });
       } else {
         console.error(`${colors.red}Unknown install type:${colors.reset} "${sub}"`);
-        console.error(`Try: ${colors.dim}employee${colors.reset} or ${colors.dim}skill${colors.reset}`);
+        console.error(`Try: ${colors.dim}role${colors.reset} or ${colors.dim}skill${colors.reset}`);
         process.exit(1);
       }
       break;
@@ -167,6 +192,24 @@ async function main() {
       break;
     }
 
+    // `prompts` groups everything about the prompt files this CLI copied into
+    // your editor. Before, "update" meant the CLI itself while "update-skills"
+    // meant these files — one word, two subjects, and no way to guess which.
+    case 'prompts': {
+      if (!sub || sub === 'outdated' || sub === 'list') {
+        printOutdated(scanOutdated(), VERSION);
+        break;
+      }
+      if (sub === 'refresh' || sub === 'update') {
+        await refreshPrompts();
+        break;
+      }
+      console.error(`${colors.red}Unknown prompts command:${colors.reset} "${sub}"`);
+      console.error(`Try: ${colors.dim}openlabor prompts outdated${colors.reset} or ${colors.dim}openlabor prompts refresh${colors.reset}`);
+      process.exit(1);
+      break;
+    }
+
     case 'outdated': {
       // Scan known target dirs for files with openlabor markers and check version
       const outdated = scanOutdated();
@@ -175,26 +218,7 @@ async function main() {
     }
 
     case 'update-skills': {
-      const outdated = scanOutdated();
-      if (outdated.length === 0) {
-        console.log(`${colors.green}All installed skills are up to date.${colors.reset}`);
-        break;
-      }
-      console.log(`Re-installing ${outdated.length} skill(s)...`);
-      console.log('');
-      for (const item of outdated) {
-        if (item.type === 'skill') {
-          await installSkill(item.slug, item.target).catch((err) => {
-            console.error(`${colors.red}Error reinstalling ${item.slug}:${colors.reset} ${err.message}`);
-          });
-        } else if (item.type === 'employee') {
-          await installEmployee(item.slug, item.target).catch((err) => {
-            console.error(`${colors.red}Error reinstalling ${item.slug}:${colors.reset} ${err.message}`);
-          });
-        }
-      }
-      console.log('');
-      console.log(`${colors.green}Done.${colors.reset}`);
+      await refreshPrompts();
       break;
     }
 
@@ -203,11 +227,9 @@ async function main() {
     case 'login': {
       // openlabor login <api-key> [--url <url>]
       let apiKey = null;
-      let apiUrl = null;
       const loginArgs = [sub, ...rest].filter(Boolean);
       for (let i = 0; i < loginArgs.length; i++) {
         if ((loginArgs[i] === '--key' || loginArgs[i] === '-k') && loginArgs[i + 1]) { apiKey = loginArgs[++i]; }
-        else if ((loginArgs[i] === '--url' || loginArgs[i] === '-u') && loginArgs[i + 1]) { apiUrl = loginArgs[++i]; }
         else if (!apiKey && !loginArgs[i].startsWith('-')) { apiKey = loginArgs[i]; }
       }
       // No key given → browser login. This is the default path: it always mints
@@ -215,7 +237,7 @@ async function main() {
       // people ended up with an employee-scoped key that 403s on `team`.
       let loginResult;
       if (!apiKey) {
-        loginResult = await browserLogin(apiUrl, ({ userCode, verificationUrl, opened }) => {
+        loginResult = await browserLogin(({ userCode, verificationUrl, opened }) => {
           console.log('');
           console.log(`  Confirmation code: ${colors.bold}${userCode}${colors.reset}`);
           console.log('');
@@ -229,7 +251,7 @@ async function main() {
         });
       } else {
         // Resolve org and URL from the API key
-        loginResult = await resolveApiKey(apiKey, apiUrl).catch((err) => {
+        loginResult = await resolveApiKey(apiKey).catch((err) => {
           console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
           process.exit(1);
         });
@@ -237,7 +259,6 @@ async function main() {
       saveCredentials(loginResult);
       console.log(`${colors.green}Logged in!${colors.reset}`);
       console.log(`  Org:      ${colors.bold}${loginResult.company_name || loginResult.company_id}${colors.reset}`);
-      console.log(`  API URL:  ${colors.dim}${loginResult.api_url}${colors.reset}`);
       console.log(`${colors.dim}Credentials saved to ~/.openlabor/credentials.json${colors.reset}`);
       break;
     }
@@ -254,7 +275,7 @@ async function main() {
         console.log(`${colors.yellow}Not logged in.${colors.reset} Run: ${colors.dim}openlabor login <api-key>${colors.reset}`);
       } else {
         console.log(`${colors.bold}Logged in${colors.reset}`);
-        console.log(`  API URL:  ${colors.dim}${creds.api_url}${colors.reset}`);
+        console.log(`  API:      ${colors.dim}${API_URL}${colors.reset}`);
         console.log(`  Org:      ${colors.dim}${creds.company_id || '(auto-detect)'}${colors.reset}`);
         console.log(`  Key:      ${colors.dim}${creds.api_key.slice(0, 8)}...${colors.reset}`);
       }
