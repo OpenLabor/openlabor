@@ -35,7 +35,17 @@ export function createClient({ apiUrl, apiKey }) {
 
     if (!res.ok) {
       const errBody = await res.json().catch(() => null);
-      const msg = errBody?.error || `Request failed: ${res.status}`;
+      let msg = errBody?.error || `Request failed: ${res.status}`;
+
+      // Say what to do, not just what happened. "Request failed: 401" tells a
+      // caller — human or agent — nothing it can act on, and these two statuses
+      // have exactly one remedy each.
+      if (res.status === 401) {
+        msg = 'Not authenticated (401). Your key is missing, invalid or revoked — run `openlabor login`.';
+      } else if (res.status === 403 && errBody?.error === 'guest_forbidden') {
+        msg = 'Forbidden (403). This key only covers one employee. Run `openlabor login` to get a workspace key.';
+      }
+
       throw new ApiError(msg, res.status, errBody);
     }
 

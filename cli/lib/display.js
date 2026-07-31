@@ -1,17 +1,42 @@
-// ANSI color codes — no external deps
+// ANSI color codes — no external deps.
+//
+// Silenced when the output is not a terminal, or when NO_COLOR is set. This CLI
+// is driven by AI agents as much as by people, and an agent parsing `whoami`
+// was getting `\x1b[1mLogged in\x1b[0m` — escape codes it has to strip before it
+// can read anything. A pipe is the signal that nobody is looking at colors.
+const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+const c = (code) => (useColor ? code : '');
+
 export const colors = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  bgBlue: '\x1b[44m',
+  reset: c('\x1b[0m'),
+  bold: c('\x1b[1m'),
+  dim: c('\x1b[2m'),
+  red: c('\x1b[31m'),
+  green: c('\x1b[32m'),
+  yellow: c('\x1b[33m'),
+  blue: c('\x1b[34m'),
+  magenta: c('\x1b[35m'),
+  cyan: c('\x1b[36m'),
+  white: c('\x1b[37m'),
+  bgBlue: c('\x1b[44m'),
 };
+
+/**
+ * Report a failure and exit non-zero.
+ *
+ * In JSON mode this emits `{"ok":false,"error":"…"}` on stdout, so a caller that
+ * asked for structured output gets it on the failure path too — that is the path
+ * it actually has to branch on. Human mode keeps the coloured stderr message.
+ */
+export function fail(message, hint) {
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify({ ok: false, error: message, ...(hint ? { hint } : {}) }));
+  } else {
+    console.error(`${colors.red}Error:${colors.reset} ${message}`);
+    if (hint) console.error(`${colors.dim}${hint}${colors.reset}`);
+  }
+  process.exit(1);
+}
 
 /**
  * Pad a string to a fixed width (truncates if too long).
@@ -61,6 +86,10 @@ export function printTable(columns, rows) {
  * Print employees table.
  */
 export function printEmployees(employees) {
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify({ ok: true, employees }));
+    return;
+  }
   const cols = [
     { label: 'ID', width: 16 },
     { label: 'NAME', width: 14 },
@@ -90,6 +119,10 @@ export function printEmployees(employees) {
  * Print skills table.
  */
 export function printSkills(skills) {
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify({ ok: true, skills }));
+    return;
+  }
   const cols = [
     { label: 'SKILL', width: 24 },
     { label: 'CATEGORY', width: 16 },
@@ -115,6 +148,10 @@ export function printSkills(skills) {
  * Print search results.
  */
 export function printSearchResults(results, query) {
+  if (process.env.OPENLABOR_JSON === '1') {
+    console.log(JSON.stringify({ ok: true, query, results }));
+    return;
+  }
   if (results.length === 0) {
     console.log(`${colors.yellow}No results found for "${query}"${colors.reset}`);
     return;

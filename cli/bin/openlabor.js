@@ -2,7 +2,7 @@
 
 import { listEmployees, listSkills, search } from '../lib/registry.js';
 import { installEmployee, installSkill, TARGETS } from '../lib/installer.js';
-import { printEmployees, printSkills, printSearchResults, printHelp, printTargets, printVersion, printConfig, printOutdated, printOrgEmployees, printDispatchResult, printHistory, printEmployeeTasks, colors } from '../lib/display.js';
+import { printEmployees, printSkills, printSearchResults, printHelp, printTargets, printVersion, printConfig, printOutdated, printOrgEmployees, printDispatchResult, printHistory, printEmployeeTasks, colors, fail } from '../lib/display.js';
 import { VERSION } from '../lib/version.js';
 import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallType, performUpdate } from '../lib/updater.js';
 import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
@@ -114,15 +114,9 @@ async function main() {
       }
 
       if (sub === 'role' || sub === 'employee') {
-        await installEmployee(name, targetName).catch((err) => {
-          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-          process.exit(1);
-        });
+        await installEmployee(name, targetName).catch((err) => fail(err.message));
       } else if (sub === 'skill') {
-        await installSkill(name, targetName).catch((err) => {
-          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-          process.exit(1);
-        });
+        await installSkill(name, targetName).catch((err) => fail(err.message));
       } else {
         console.error(`${colors.red}Unknown install type:${colors.reset} "${sub}"`);
         console.error(`Try: ${colors.dim}role${colors.reset} or ${colors.dim}skill${colors.reset}`);
@@ -245,16 +239,10 @@ async function main() {
             ? `${colors.dim}Opened your browser. Approve the code there.${colors.reset}`
             : `Open this URL to approve: ${colors.dim}${verificationUrl}${colors.reset}`);
           console.log(`${colors.dim}Waiting…  (Ctrl-C to cancel · openlabor login --key <api-key> to paste one instead)${colors.reset}`);
-        }).catch((err) => {
-          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-          process.exit(1);
-        });
+        }).catch((err) => fail(err.message));
       } else {
         // Resolve org and URL from the API key
-        loginResult = await resolveApiKey(apiKey).catch((err) => {
-          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-          process.exit(1);
-        });
+        loginResult = await resolveApiKey(apiKey).catch((err) => fail(err.message));
       }
       saveCredentials(loginResult);
       console.log(`${colors.green}Logged in!${colors.reset}`);
@@ -272,22 +260,46 @@ async function main() {
     case 'whoami': {
       const creds = loadCredentials();
       if (!creds || !creds.api_key) {
-        console.log(`${colors.yellow}Not logged in.${colors.reset} Run: ${colors.dim}openlabor login <api-key>${colors.reset}`);
-      } else {
-        console.log(`${colors.bold}Logged in${colors.reset}`);
-        console.log(`  API:      ${colors.dim}${API_URL}${colors.reset}`);
-        console.log(`  Org:      ${colors.dim}${creds.company_id || '(auto-detect)'}${colors.reset}`);
-        console.log(`  Key:      ${colors.dim}${creds.api_key.slice(0, 8)}...${colors.reset}`);
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: false, logged_in: false }));
+        } else {
+          console.log(`${colors.yellow}Not logged in.${colors.reset} Run: ${colors.dim}openlabor login${colors.reset}`);
+        }
+        process.exit(1);
       }
+
+      // Actually ask the server. Reading credentials off disk only proves a file
+      // exists — it said "Logged in" for a key the API rejects with 401, which
+      // is the one moment this command has to be right.
+      let org = null;
+      let authError = null;
+      try {
+        org = await resolveApiKey(creds.api_key);
+      } catch (err) {
+        authError = err.message;
+      }
+
+      if (process.env.OPENLABOR_JSON === '1') {
+        console.log(JSON.stringify(authError
+          ? { ok: false, logged_in: false, error: authError }
+          : { ok: true, logged_in: true, api: API_URL, org_id: org.company_id, org_name: org.company_name }));
+        if (authError) process.exit(1);
+        break;
+      }
+
+      if (authError) {
+        fail(`Your stored credentials are not valid: ${authError}`, 'Run `openlabor login` to sign in again.');
+      }
+      console.log(`${colors.bold}Logged in${colors.reset}`);
+      console.log(`  API:      ${colors.dim}${API_URL}${colors.reset}`);
+      console.log(`  Org:      ${colors.dim}${org.company_name || org.company_id}${colors.reset}`);
+      console.log(`  Key:      ${colors.dim}${creds.api_key.slice(0, 8)}...${colors.reset}`);
       break;
     }
 
     case 'team':
     case 'employees': {
-      const agents = await listOrgEmployees().catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      const agents = await listOrgEmployees().catch((err) => fail(err.message));
       printOrgEmployees(agents);
       break;
     }
@@ -321,10 +333,7 @@ async function main() {
       }
 
       console.log(`${colors.dim}${askEmployee ? `Asking ${askEmployee}...` : 'Routing to best employee...'}${colors.reset}`);
-      const askResult = await ask(askEmployee, askMsg).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      const askResult = await ask(askEmployee, askMsg).catch((err) => fail(err.message));
       if (askResult.routed) {
         console.log(`${colors.dim}Routed to ${askResult.employeeName} (${askResult.role})${colors.reset}`);
       }
@@ -359,10 +368,7 @@ async function main() {
       }
 
       console.log(`${colors.dim}${chatEmployee ? `Chatting with ${chatEmployee}...` : 'Continuing last conversation...'}${colors.reset}`);
-      const chatResult = await chat(chatEmployee, chatMsg).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      const chatResult = await chat(chatEmployee, chatMsg).catch((err) => fail(err.message));
       printDispatchResult(chatResult);
       break;
     }
@@ -389,10 +395,7 @@ async function main() {
           console.log('');
         }
       } else {
-        const histResult = await history(histEmployee).catch((err) => {
-          console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-          process.exit(1);
-        });
+        const histResult = await history(histEmployee).catch((err) => fail(err.message));
         printHistory(histResult);
       }
       break;
@@ -410,8 +413,7 @@ async function main() {
         else if (rest[i] === '--overwrite') upOverwrite = true;
       }
       if (!upEmployee || !upPath) {
-        console.error(`${colors.red}Error:${colors.reset} Usage: ${colors.dim}openlabor upload <employee> <file-or-dir> [--dir <subdir>] [--overwrite]${colors.reset}`);
-        process.exit(1);
+        fail('Missing arguments.', 'Usage: openlabor upload <employee> <file-or-dir> [--dir <subdir>] [--overwrite]');
       }
       const upRes = await upload(upEmployee, upPath, {
         dir: upDir,
@@ -421,10 +423,7 @@ async function main() {
           else if (status === 'skipped') console.log(`  ${colors.dim}– ${rel}${colors.reset}`);
           else console.log(`  ${colors.red}✗${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
         },
-      }).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      }).catch((err) => fail(err.message));
       console.log('');
       console.log(`${colors.green}${upRes.uploaded} file(s)${colors.reset} → ${colors.bold}${upRes.employee.custom_name || upRes.employee.template_id}${colors.reset}`);
       if (upRes.skipped.length) console.log(`${colors.dim}${upRes.skipped.length} skipped${colors.reset}`);
@@ -436,13 +435,9 @@ async function main() {
       // openlabor download <employee> [dest.zip]
       const dlEmployee = sub;
       if (!dlEmployee) {
-        console.error(`${colors.red}Error:${colors.reset} Usage: ${colors.dim}openlabor download <employee> [dest.zip]${colors.reset}`);
-        process.exit(1);
+        fail('Missing employee.', 'Usage: openlabor download <employee> [dest.zip]');
       }
-      const dlRes = await download(dlEmployee, rest[0]).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      const dlRes = await download(dlEmployee, rest[0]).catch((err) => fail(err.message));
       console.log(`${colors.green}Downloaded${colors.reset} ${colors.bold}${dlRes.path}${colors.reset} ${colors.dim}(${(dlRes.bytes / 1048576).toFixed(1)} MB)${colors.reset}`);
       break;
     }
@@ -455,10 +450,7 @@ async function main() {
         console.error(`Usage: ${colors.dim}openlabor tasks <employee>${colors.reset}`);
         process.exit(1);
       }
-      const tasksResult = await listTasks(tasksEmployee).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      const tasksResult = await listTasks(tasksEmployee).catch((err) => fail(err.message));
       printEmployeeTasks(tasksResult);
       break;
     }
@@ -471,10 +463,7 @@ async function main() {
         console.error(`Usage: ${colors.dim}openlabor run <task-id>${colors.reset}`);
         process.exit(1);
       }
-      const runResult = await runTask(runTaskId).catch((err) => {
-        console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-        process.exit(1);
-      });
+      const runResult = await runTask(runTaskId).catch((err) => fail(err.message));
       console.log(`${colors.green}Task triggered.${colors.reset}`);
       if (process.env.OPENLABOR_JSON === '1') console.log(JSON.stringify(runResult));
       break;
@@ -569,7 +558,4 @@ function scanOutdated() {
   return results;
 }
 
-main().catch((err) => {
-  console.error(`${colors.red}Error:${colors.reset} ${err.message}`);
-  process.exit(1);
-});
+main().catch((err) => fail(err.message));

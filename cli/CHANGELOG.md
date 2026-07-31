@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.2] - 2026-07-31
+
+### Fixed
+
+Making the CLI usable by an agent, not just by a person at a terminal.
+
+- **Colours are no longer emitted when nobody can see them.** Output kept its ANSI codes when piped,
+  so a caller parsing `whoami` got `\x1b[1mLogged in\x1b[0m`. Now silenced off-TTY and under
+  `NO_COLOR`.
+- **Errors honour `OPENLABOR_JSON=1`.** Structured mode covered the success path only, so the moment
+  something failed — the moment a caller has to branch — it got coloured prose. Failures now emit
+  `{"ok":false,"error":"…","hint":"…"}`. The catalog commands (`list`, `search`) emit JSON too.
+- **`whoami` asks the server instead of reading a file.** It reported "Logged in" for a key the API
+  rejects with 401. It now validates, and exits non-zero when the stored credentials are dead.
+- **401/403 say what to do.** `Request failed: 401` became "Not authenticated — run `openlabor
+  login`", and a `guest_forbidden` 403 now explains that the key only covers one employee.
+
 ## [2.0.1] - 2026-07-29
 
 ### Fixed
