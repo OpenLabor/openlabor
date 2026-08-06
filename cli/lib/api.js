@@ -54,9 +54,37 @@ export function createClient({ apiUrl, apiKey }) {
     return JSON.parse(text);
   }
 
+  /**
+   * Same request, multipart body. One endpoint needs it — POST /employees/custom
+   * takes an avatar, so it parses form data and rejects JSON. Content-Type is
+   * omitted deliberately: fetch derives it from the FormData, boundary included,
+   * and setting it by hand produces a boundary-less header the server can't split.
+   */
+  async function requestForm(method, path, fields) {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined && v !== null && v !== '') form.append(k, String(v));
+    }
+
+    const res = await fetch(`${base}${path}`, {
+      method,
+      headers: { 'X-API-Key': apiKey },
+      body: form,
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null);
+      throw new ApiError(errBody?.error || `Request failed: ${res.status}`, res.status, errBody);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
   return {
     get: (path) => request('GET', path),
     post: (path, body) => request('POST', path, body),
+    postForm: (path, fields) => requestForm('POST', path, fields),
+    put: (path, body) => request('PUT', path, body),
     patch: (path, body) => request('PATCH', path, body),
     del: (path) => request('DELETE', path),
   };

@@ -7,9 +7,9 @@ import { VERSION } from '../lib/version.js';
 import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallType, performUpdate } from '../lib/updater.js';
 import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
-import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey } from '../lib/pilot.js';
+import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, getContext, setContext, listCatalogSkills, listInstalledSkills } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
-import { upload, download } from '../lib/files.js';
+import { upload, uploadToHq, download } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -403,7 +403,34 @@ async function main() {
 
     case 'upload': {
       // openlabor upload <employee> <path> [--dir <subdir>] [--overwrite]
-      // Employee first, like every other pilot command.
+      // openlabor upload --hq <path> [--dir <subdir>] [--overwrite]
+      // Employee first, like every other pilot command — except for the shared
+      // HQ folder, which belongs to nobody and so takes no employee.
+      if (sub === '--hq') {
+        const hqPath = rest[0];
+        let hqDir = '';
+        let hqOverwrite = false;
+        for (let i = 1; i < rest.length; i++) {
+          if (rest[i] === '--dir' && rest[i + 1]) hqDir = rest[++i];
+          else if (rest[i] === '--overwrite') hqOverwrite = true;
+        }
+        if (!hqPath) fail('Missing path.', 'Usage: openlabor upload --hq <file-or-dir> [--dir <subdir>] [--overwrite]');
+        const hqRes = await uploadToHq(hqPath, {
+          dir: hqDir,
+          overwrite: hqOverwrite,
+          onFile: ({ rel, status, why }) => {
+            if (status === 'ok') console.log(`  ${colors.green}\u2713${colors.reset} ${rel}`);
+            else if (status === 'skipped') console.log(`  ${colors.dim}\u2013 ${rel}${why ? ` (${why})` : ''}${colors.reset}`);
+            else console.log(`  ${colors.red}\u2717${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
+          },
+        }).catch((err) => fail(err.message));
+        console.log('');
+        console.log(`${colors.green}${hqRes.uploaded} file(s)${colors.reset} \u2192 ${colors.bold}HQ${colors.reset} ${colors.dim}(shared with every employee)${colors.reset}`);
+        if (hqRes.skipped.length) console.log(`${colors.dim}${hqRes.skipped.length} skipped${colors.reset}`);
+        if (hqRes.failed.length) console.log(`${colors.yellow}${hqRes.failed.length} failed${colors.reset}`);
+        break;
+      }
+
       const upEmployee = sub;
       const upPath = rest[0];
       let upDir = '';
@@ -466,6 +493,210 @@ async function main() {
       const runResult = await runTask(runTaskId).catch((err) => fail(err.message));
       console.log(`${colors.green}Task triggered.${colors.reset}`);
       if (process.env.OPENLABOR_JSON === '1') console.log(JSON.stringify(runResult));
+      break;
+    }
+
+    // ─── Building the team ───────────────────────────────────
+    // These three are what an unattended migration needs. Before them, an agent
+    // holding someone's Claude Code setup could talk to a team but not create
+    // one, so every import guide fell back to hand-written curl.
+
+    case 'hire': {
+      // openlabor hire                                  — what you can hire
+      // openlabor hire <role> [name]                    — hire one of ours
+      // openlabor hire --custom <name> --role <r> --description <d> [--emoji X]
+      if (!sub) {
+        const roles = await listHirableRoles().catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, roles }));
+          break;
+        }
+        console.log(`${colors.bold}Roles you can hire${colors.reset}\n`);
+        for (const r of roles) {
+          console.log(`  ${colors.bold}${r.id}${colors.reset}  ${colors.dim}${r.role}${colors.reset}`);
+        }
+        console.log(`\n${colors.dim}openlabor hire <role> "<name>"${colors.reset}`);
+        break;
+      }
+
+      if (sub === '--custom') {
+        const flag = (n) => {
+          const i = rest.indexOf(`--${n}`);
+          return i >= 0 ? rest[i + 1] : undefined;
+        };
+        // The name is the one positional: `hire --custom "Atlas" --role ...`
+        const customName = rest[0] && !rest[0].startsWith('--') ? rest[0] : flag('name');
+        const created = await hireCustom({
+          name: customName,
+          role: flag('role'),
+          description: flag('description'),
+          emoji: flag('emoji'),
+          bg: flag('bg'),
+        }).catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, employee: created }));
+          break;
+        }
+        console.log(`${colors.green}Hired${colors.reset} ${colors.bold}${customName}${colors.reset} ${colors.dim}(${created.id})${colors.reset}`);
+        break;
+      }
+
+      const hired = await hire(sub, rest.join(' ')).catch((err) => fail(err.message));
+      if (process.env.OPENLABOR_JSON === '1') {
+        console.log(JSON.stringify({ ok: true, employee: hired }));
+        break;
+      }
+      console.log(`${colors.green}Hired${colors.reset} ${colors.bold}${rest.join(' ') || hired.role}${colors.reset} ${colors.dim}as ${hired.role} (${hired.id})${colors.reset}`);
+      break;
+    }
+
+    case 'skill': {
+      // openlabor skill catalog [--role <r>]   — everything the workspace holds
+      // openlabor skill list <employee>        — what that employee actually has
+      // openlabor skill create <name> --file <path> [--for <employee>]
+      // openlabor skill update <employee> <skill> --file <path>
+      //
+      // NB `openlabor update-skills` is a different word entirely: it refreshes
+      // the prompt files this CLI copied into your editor. Nothing to do with
+      // what an employee knows.
+      //
+      // catalog and list answer different questions and read different sources:
+      // the catalog is the database, the list is the files in the employee's
+      // workspace. A skill exists in the catalog long before anyone installs it.
+      if (sub === 'catalog') {
+        const ri = rest.indexOf('--role');
+        const catalog = await listCatalogSkills(ri >= 0 ? rest[ri + 1] : undefined).catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, skills: catalog }));
+          break;
+        }
+        console.log('');
+        console.log(`${colors.bold}Skill catalog${colors.reset} ${colors.dim}(${catalog.length} in this workspace)${colors.reset}`);
+        console.log('');
+        for (const sk of catalog) {
+          console.log(`  ${colors.yellow}${sk.id}${colors.reset}  ${sk.name}${sk.category ? ` ${colors.dim}[${sk.category}]${colors.reset}` : ''}`);
+        }
+        console.log('');
+        console.log(`${colors.dim}Installed on one employee: openlabor skill list <employee>${colors.reset}`);
+        console.log('');
+        break;
+      }
+
+      if (sub === 'list' || sub === 'installed') {
+        if (!rest[0]) {
+          fail('Missing employee.', 'Usage: openlabor skill list <employee>   —  for every skill in the workspace, use `openlabor skill catalog`');
+        }
+        const inst = await listInstalledSkills(rest[0]).catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, employee_id: inst.employee.id, skills: inst.skills }));
+          break;
+        }
+        console.log('');
+        console.log(`${colors.bold}${inst.employee.custom_name || inst.employee.template_id}${colors.reset} ${colors.dim}knows ${inst.skills.length} skill(s)${colors.reset}`);
+        console.log('');
+        for (const sk of inst.skills) {
+          console.log(`  ${colors.yellow}${sk.id}${colors.reset}  ${sk.name}`);
+        }
+        if (inst.skills.length === 0) console.log(`  ${colors.dim}(none installed)${colors.reset}`);
+        console.log('');
+        break;
+      }
+
+      if (sub === 'update' || sub === 'edit') {
+        const uf = (n) => {
+          const i = rest.indexOf(`--${n}`);
+          return i >= 0 ? rest[i + 1] : undefined;
+        };
+        const [who, which] = rest;
+        if (!who || !which || which.startsWith('--')) {
+          fail(
+            'Usage: openlabor skill update <employee> <skill> --file <path>',
+            'The skill id is what `openlabor skill list <employee>` prints.',
+          );
+        }
+        const file = uf('file');
+        if (!file || !existsSync(file)) fail(`No such file: ${file || '(missing --file)'}`);
+
+        const res = await updateInstalledSkill({
+          employee: who,
+          skill: which,
+          instruction: readFileSync(file, 'utf-8'),
+          name: uf('name'),
+          description: uf('description'),
+          icon: uf('icon'),
+        }).catch((err) => fail(err.message));
+
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, employee_id: res.employee.id, skill: res.skill.id }));
+          break;
+        }
+        const label = res.employee.custom_name || res.employee.template_id;
+        console.log(`${colors.green}Updated${colors.reset} ${colors.bold}${res.skill.name}${colors.reset} ${colors.dim}on ${label}${colors.reset}`);
+        console.log(`${colors.dim}Their copy only — the catalog and everyone else's copy are unchanged.${colors.reset}`);
+        break;
+      }
+
+      if (sub !== 'create') {
+        console.error(`${colors.red}Error:${colors.reset} Unknown skill command: ${sub || '(none)'}`);
+        console.error(`Usage: ${colors.dim}openlabor skill catalog${colors.reset}                          every skill in the workspace`);
+        console.error(`       ${colors.dim}openlabor skill list <employee>${colors.reset}                  what one employee has`);
+        console.error(`       ${colors.dim}openlabor skill create "<name>" --file <path> [--for <employee>]${colors.reset}`);
+        console.error(`       ${colors.dim}openlabor skill update <employee> <skill> --file <path>${colors.reset}   fix one employee's copy`);
+        process.exit(1);
+      }
+      const flag = (n) => {
+        const i = rest.indexOf(`--${n}`);
+        return i >= 0 ? rest[i + 1] : undefined;
+      };
+      const skillName = rest[0] && !rest[0].startsWith('--') ? rest[0] : flag('name');
+      const skillFile = flag('file');
+      if (!skillFile || !existsSync(skillFile)) {
+        fail(`No such file: ${skillFile || '(missing --file)'}`);
+      }
+      const created = await createSkill({
+        name: skillName,
+        description: flag('description'),
+        instruction: readFileSync(skillFile, 'utf-8'),
+        employee: flag('for'),
+      }).catch((err) => fail(err.message));
+      if (process.env.OPENLABOR_JSON === '1') {
+        console.log(JSON.stringify({ ok: true, skill: created }));
+        break;
+      }
+      console.log(`${colors.green}Created skill${colors.reset} ${colors.bold}${skillName}${colors.reset}${flag('for') ? ` ${colors.dim}→ ${flag('for')}${colors.reset}` : ''}`);
+      break;
+    }
+
+    case 'context': {
+      // openlabor context                     — print the company brain
+      // openlabor context set --file <path>   — replace it
+      if (!sub) {
+        const text = await getContext().catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, context: text }));
+          break;
+        }
+        console.log(text || `${colors.dim}(empty — nothing written yet)${colors.reset}`);
+        break;
+      }
+      if (sub !== 'set') {
+        console.error(`${colors.red}Error:${colors.reset} Unknown context command: ${sub}`);
+        console.error(`Usage: ${colors.dim}openlabor context${colors.reset} | ${colors.dim}openlabor context set --file <path>${colors.reset}`);
+        process.exit(1);
+      }
+      const fi = rest.indexOf('--file');
+      const ctxFile = fi >= 0 ? rest[fi + 1] : undefined;
+      if (!ctxFile || !existsSync(ctxFile)) {
+        fail(`No such file: ${ctxFile || '(missing --file)'}`);
+      }
+      // Replaces, never merges — say so at the moment it matters, since the
+      // thing being replaced may be something the founder wrote by hand.
+      const written = await setContext(readFileSync(ctxFile, 'utf-8')).catch((err) => fail(err.message));
+      if (process.env.OPENLABOR_JSON === '1') {
+        console.log(JSON.stringify({ ok: true, ...written }));
+        break;
+      }
+      console.log(`${colors.green}Company brain updated${colors.reset} ${colors.dim}(${written.characters} characters — replaced, not merged)${colors.reset}`);
       break;
     }
 

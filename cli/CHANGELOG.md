@@ -1,5 +1,40 @@
 # Changelog
 
+## [2.1.0] - 2026-08-04
+
+### Added
+
+Commands that build a team, rather than talk to one. Before these, an agent holding an API key
+could message employees but not create any, so every migration guide fell back to hand-written
+curl against endpoints that drift.
+
+- **`openlabor hire`** — with no argument, lists the roles you can hire. `hire <role> "<name>"`
+  hires one; `hire --custom "<name>" --role <r> --description <d>` creates one we don't ship.
+  A role is single-occupancy, so re-running an import is refused rather than duplicated.
+- **`openlabor skill create "<name>" --file <path>`** — the file is the instruction, verbatim.
+  `--for <employee>` installs it on someone.
+- **`openlabor context`** / **`context set --file <path>`** — read or replace the company brain
+  (`hq/COMPANY.md`). `set` replaces; read first and merge if you mean to keep what's there.
+- **`openlabor skill catalog`** / **`openlabor skill list <employee>`** — two questions, two sources.
+  The catalog is the database: every skill the workspace holds, installed or not. The list reads the
+  employee's own workspace files, because that is where an installed skill actually lives — a real
+  employee here shows 7 skills on disk against 0 rows in `employee_skills`, so answering from the
+  database would have reported an employee who knows nothing.
+- **`openlabor skill update <employee> <skill> --file <path>`** — rewrite a skill one employee
+  already has. Their copy, not the catalog: the catalog is shared by the whole workspace, so
+  editing it would change what everyone else is served. The edit outranks the catalog from then
+  on — a later version bump reports the file as customised and leaves it alone rather than
+  overwriting the correction. Not to be confused with `openlabor update-skills`, which refreshes
+  the prompt files this CLI copied into your editor and has nothing to do with employees.
+- **`openlabor upload --hq <path>`** — upload into the org's shared HQ folder. `upload <employee>
+  x.md --dir hq` looked like it did this and did not: an employee upload is fenced to that
+  employee's own directory, so it wrote `<employee>/hq/x.md`, a private folder wearing a shared
+  name. `--hq` takes the org-scoped route instead, and refuses `COMPANY.md` — that one belongs to
+  `context set`, which also keeps the database and the memory backend in step with the file.
+
+All three honour `OPENLABOR_JSON=1`. Written for Settings → Import, which hands your existing
+Claude Code or OpenClaw agent a prompt built entirely on this CLI.
+
 ## [2.0.2] - 2026-07-31
 
 ### Fixed

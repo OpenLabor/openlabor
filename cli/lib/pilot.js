@@ -250,3 +250,199 @@ export async function runTask(taskId) {
   const { client } = getClient();
   return client.post(`/api/crons/tasks/${encodeURIComponent(taskId)}/run`, {});
 }
+
+// ─── Building a team, rather than talking to one ──────────────
+//
+// These four exist so a migration can run unattended: an agent that already
+// holds someone's Claude Code or OpenClaw setup can hire the team, teach it the
+// skills, and write the company brain without ever hand-rolling an HTTP call.
+// See `openlabor hire`, `openlabor skill create`, `openlabor context`.
+
+/**
+ * The roles OpenLabor ships, ready to hire.
+ *
+ * Deliberately not the same list as `openlabor list roles`: that one browses the
+ * public prompt catalog and writes files into your editor. This one is what your
+ * workspace can actually employ.
+ */
+export async function listHirableRoles() {
+  const { client } = getClient();
+  const catalog = await client.get('/api/employees/catalog');
+  return Array.isArray(catalog) ? catalog : [];
+}
+
+/**
+ * Hire one of our roles. `name` is what you'll call them; it defaults to the role.
+ *
+ * A role is single-occupancy — the API rejects a second hire of the same
+ * templateId — so re-running an import is safe but not idempotent-in-silence:
+ * you get a clear error rather than a duplicate team.
+ */
+export async function hire(templateId, customName) {
+  const { client } = getClient();
+  const roles = await listHirableRoles();
+  const match = roles.find(
+    (r) => r.id === templateId || r.id === templateId?.toLowerCase(),
+  );
+  if (!match) {
+    const known = roles.map((r) => r.id).join(', ');
+    throw new Error(`Unknown role: "${templateId}". Available: ${known}`);
+  }
+  const created = await client.post('/api/employees/hire', {
+    templateId: match.id,
+    customName: customName?.trim() || match.role,
+  });
+  return { ...created, templateId: match.id, role: match.role };
+}
+
+/** Palette the API accepts for an emoji avatar (see api services/avatar-url.ts). */
+const AVATAR_BG = [
+  '1e1b4b', '312e81', '1e3a5f', '0f766e', '166534', '3f6212',
+  '854d0e', '9a3412', '9f1239', '86198f', '5b21b6', '334155',
+];
+
+/**
+ * Create an employee no catalog role covers.
+ *
+ * `description` is not decoration: it is what the persona is synthesized from,
+ * so a vague one produces a generic employee. An avatar is mandatory server-side;
+ * we pick a palette colour when the caller doesn't care, because failing a hire
+ * over a background colour would be absurd.
+ */
+export async function hireCustom({ name, role, description, emoji, bg }) {
+  const { client } = getClient();
+  if (!name?.trim()) throw new Error('A name is required.');
+
+  const colour = bg && AVATAR_BG.includes(bg)
+    ? bg
+    : AVATAR_BG[Math.abs(hashString(name)) % AVATAR_BG.length];
+
+  return client.postForm('/api/employees/custom', {
+    name: name.trim(),
+    role: role?.trim() || '',
+    description: description?.trim() || '',
+    avatarEmoji: emoji || '🧑‍💼',
+    avatarBg: colour,
+  });
+}
+
+/** Stable colour per name, so re-running an import doesn't reshuffle avatars. */
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+/**
+ * Teach a skill to the workspace, optionally installing it on one employee.
+ * `instruction` is the whole procedure — markdown, as you'd write it by hand.
+ */
+export async function createSkill({ name, description, instruction, employee }) {
+  const { client } = getClient();
+  if (!name?.trim()) throw new Error('A skill name is required.');
+  if (!instruction?.trim()) throw new Error('A skill needs an instruction — pass --file.');
+
+  let employeeId;
+  if (employee) employeeId = (await getEmployee(employee)).id;
+
+  return client.post('/api/skills/create', {
+    name: name.trim(),
+    description: description?.trim() || '',
+    instruction,
+    ...(employeeId ? { employeeId } : {}),
+  });
+}
+
+/**
+ * Rewrite a skill one employee already has, in their workspace.
+ *
+ * Not a catalog edit. The catalog is shared by the whole workspace, so changing
+ * it would change what everyone else is served; this touches the SKILL.md that
+ * this one employee actually reads. The edit also outranks the catalog from
+ * then on — a later version bump reports the file as customised and leaves it
+ * alone instead of overwriting the correction.
+ *
+ * `skill` is the id `openlabor skill list <employee>` prints.
+ */
+export async function updateInstalledSkill({ employee, skill, instruction, name, description, icon }) {
+  const { client } = getClient();
+  if (!skill?.trim()) throw new Error('Which skill? Pass the id from `openlabor skill list <employee>`.');
+  if (!instruction?.trim()) throw new Error('A skill needs an instruction — pass --file.');
+
+  const emp = await getEmployee(employee);
+  const installed = await client.get(`/api/skills/employee/${encodeURIComponent(emp.id)}`);
+  const match = (Array.isArray(installed) ? installed : []).find(
+    (s) => s.id === skill.trim() || s.templateId === skill.trim() || s.name?.toLowerCase() === skill.trim().toLowerCase(),
+  );
+  // Fail here rather than let the API 404: this way the message can say what
+  // they DO have, which is the next thing anyone asks.
+  if (!match) {
+    const have = (Array.isArray(installed) ? installed : []).map((s) => s.id).join(', ') || '(none installed)';
+    throw new Error(`${emp.custom_name || emp.template_id} has no skill "${skill}". Installed: ${have}`);
+  }
+
+  await client.put(`/api/skills/employee/${encodeURIComponent(emp.id)}/${encodeURIComponent(match.id)}`, {
+    instruction,
+    ...(name ? { name } : {}),
+    ...(description != null ? { description } : {}),
+    ...(icon != null ? { icon } : {}),
+  });
+  return { employee: emp, skill: match };
+}
+
+/** The company brain (hq/COMPANY.md) — what every employee reads before working. */
+export async function getContext() {
+  const { client } = getClient();
+  const org = await client.get('/api/org');
+  return org?.org_context || '';
+}
+
+/**
+ * Replace the company brain.
+ *
+ * Replace, not append: callers that mean to keep what's there must read it
+ * first and send the merged text. An import that blindly overwrites a brain the
+ * founder wrote by hand is the one unrecoverable mistake in this file.
+ */
+export async function setContext(text) {
+  const { client } = getClient();
+  if (!text?.trim()) throw new Error('Refusing to write an empty company brain.');
+  if (text.length > 30000) {
+    throw new Error(`Company brain is ${text.length} characters; the limit is 30000.`);
+  }
+  await client.put('/api/org/context', { context: text });
+  return { ok: true, characters: text.length };
+}
+
+/**
+ * The org's skill catalog — every skill the database holds, installed or not.
+ *
+ * Deliberately a different question from `listInstalledSkills`. This one answers
+ * "what could this workspace teach someone"; that one answers "what does this
+ * employee actually know", and the two drift apart the moment a skill is created
+ * for one person.
+ */
+export async function listCatalogSkills(role) {
+  const { client } = getClient();
+  const path = role ? `/api/skills?role=${encodeURIComponent(role)}` : '/api/skills';
+  const skills = await client.get(path);
+  return Array.isArray(skills) ? skills : [];
+}
+
+/**
+ * What one employee actually has, read from the files in their workspace.
+ *
+ * The workspace is the truth here, not the database: a skill is installed when
+ * its SKILL.md is on disk, and the catalog row only decorates it (version,
+ * roles, icon). Reading the DB instead would report skills that were never
+ * written, and miss ones an agent wrote for itself.
+ */
+export async function listInstalledSkills(employeeIdOrName) {
+  const { client } = getClient();
+  const employee = await getEmployee(employeeIdOrName);
+  const skills = await client.get(`/api/skills/employee/${encodeURIComponent(employee.id)}`);
+  return {
+    employee,
+    skills: Array.isArray(skills) ? skills : [],
+  };
+}

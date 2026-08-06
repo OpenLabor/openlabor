@@ -101,6 +101,75 @@ export async function upload(employeeIdOrName, localPath, opts = {}) {
 }
 
 /**
+ * Upload into the org's SHARED hq/ folder, which every employee reads.
+ *
+ * Not a flag on `upload` by accident: the two take different routes. An
+ * employee upload goes through that employee's workspace tool, which is fenced
+ * to their own directory — `upload cmo x.md --dir hq` writes cmo/hq/x.md, a
+ * private folder that merely looks shared. Reaching the real hq/ needs the
+ * org-scoped workspace route, which is what this uses.
+ */
+export async function uploadToHq(localPath, opts = {}) {
+  const { dir: subDir = '', overwrite = false } = opts;
+  if (!existsSync(localPath)) throw new Error(`No such file or directory: ${localPath}`);
+
+  const creds = requireAuth();
+  const api = createClient({ apiUrl: API_URL, apiKey: creds.api_key });
+
+  const stat = statSync(localPath);
+  const files = stat.isDirectory()
+    ? walk(localPath)
+    : [{ abs: localPath, rel: basename(localPath) }];
+  if (files.length === 0) throw new Error(`Nothing to upload from ${localPath}`);
+
+  const results = { uploaded: 0, skipped: [], failed: [] };
+
+  for (const f of files) {
+    const inner = subDir ? `${subDir.replace(/^\/+|\/+$/g, '')}/${f.rel}` : f.rel;
+    const dest = `hq/${inner}`;
+
+    // COMPANY.md is the company brain. Writing the file alone leaves the DB and
+    // the memory backend behind, so the brain reads as empty everywhere except
+    // on disk — `openlabor context set` is the one path that keeps all three
+    // in step.
+    if (basename(dest) === 'COMPANY.md') {
+      results.skipped.push({ rel: dest, why: 'use `openlabor context set --file` instead' });
+      opts.onFile?.({ rel: dest, status: 'skipped', why: 'use `openlabor context set --file`' });
+      continue;
+    }
+
+    const buf = readFileSync(f.abs);
+    if (buf.length > MAX_BYTES) {
+      results.skipped.push({ rel: dest, why: `too large (${(buf.length / 1048576).toFixed(1)}MB)` });
+      opts.onFile?.({ rel: dest, status: 'skipped' });
+      continue;
+    }
+
+    try {
+      if (!overwrite) {
+        const existing = await api.get(`/api/workspace/file?path=${encodeURIComponent(dest)}`).catch(() => null);
+        if (existing) {
+          results.skipped.push({ rel: dest, why: 'exists (use --overwrite)' });
+          opts.onFile?.({ rel: dest, status: 'skipped', why: 'exists (use --overwrite)' });
+          continue;
+        }
+      }
+      await api.put(`/api/workspace/file?path=${encodeURIComponent(dest)}`, {
+        content: buf.toString('base64'),
+        encoding: 'base64',
+      });
+      results.uploaded++;
+      opts.onFile?.({ rel: dest, bytes: buf.length, status: 'ok' });
+    } catch (err) {
+      results.failed.push({ rel: dest, why: err.message });
+      opts.onFile?.({ rel: dest, status: 'failed', why: err.message });
+    }
+  }
+
+  return results;
+}
+
+/**
  * Download an employee's whole workspace as a zip.
  *
  * The server streams a zip for any directory, so the entire workspace is one
