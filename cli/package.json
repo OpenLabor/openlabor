@@ -1,6 +1,6 @@
 {
   "name": "@openlabor/cli",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Browse, install, and pilot OpenLabor AI employees from Claude Code, Codex, Cursor, OpenCode, and more",
   "type": "module",
   "bin": {

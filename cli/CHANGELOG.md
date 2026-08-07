@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.2.0] - 2026-08-07
+
+### Changed
+
+- **`upload` no longer refuses the generated persona files.** `SOUL.md`, `MEMORY.md`,
+  `AGENTS.md`, `IDENTITY.md`, `TOOLS.md`, `USER.md`, `HEARTBEAT.md`, `DREAMS.md` and
+  `BOOTSTRAP.md` used to be skipped outright, on the grounds that replacing who an employee
+  is — or everything it has learned — should not be a one-liner. That was the right instinct
+  in the wrong place: it protected those files from this CLI and from nothing else, and it
+  turned "be careful" into "you cannot", so the way to edit one was to go around the CLI.
+
+  The server now folds an incoming version into what is already in the workspace instead of
+  replacing it: the push wins where the two disagree, and anything it does not mention
+  survives untouched. A merged file prints `(merged into the existing file)` and is counted
+  separately in the summary, because what landed on disk is not what was sent.
+
+  Needs an API carrying the merge (deployed 2026-08-07). Against an older one, these files
+  are written as before — pass `--overwrite` and know what you are replacing.
+
 ## [2.1.0] - 2026-08-04
 
 ### Added

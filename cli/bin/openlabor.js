@@ -447,12 +447,17 @@ async function main() {
         overwrite: upOverwrite,
         onFile: ({ rel, status, why }) => {
           if (status === 'ok') console.log(`  ${colors.green}✓${colors.reset} ${rel}`);
+          // A merged file is worth its own mark: what landed is not what was
+          // sent, and someone who thinks they replaced SOUL.md should see that
+          // it was folded into what was already there.
+          else if (status === 'merged') console.log(`  ${colors.green}✓${colors.reset} ${rel} ${colors.dim}(merged into the existing file)${colors.reset}`);
           else if (status === 'skipped') console.log(`  ${colors.dim}– ${rel}${colors.reset}`);
           else console.log(`  ${colors.red}✗${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
         },
       }).catch((err) => fail(err.message));
       console.log('');
       console.log(`${colors.green}${upRes.uploaded} file(s)${colors.reset} → ${colors.bold}${upRes.employee.custom_name || upRes.employee.template_id}${colors.reset}`);
+      if (upRes.merged.length) console.log(`${colors.dim}${upRes.merged.length} merged into existing content${colors.reset}`);
       if (upRes.skipped.length) console.log(`${colors.dim}${upRes.skipped.length} skipped${colors.reset}`);
       if (upRes.failed.length) console.log(`${colors.yellow}${upRes.failed.length} failed${colors.reset}`);
       break;
