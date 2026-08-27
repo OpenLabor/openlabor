@@ -1,7 +1,7 @@
 ---
 name: CrowdTest Sales
 description: Sales playbook for CrowdTest by OpenLabor — AI audience simulation reports
-category: sales
+category: Sales
 version: 1
 ---
 

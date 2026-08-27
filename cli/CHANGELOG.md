@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.2.1] - 2026-08-27
+
+### Fixed
+
+- **The catalog now ships inside the package.** Installed from npm, every catalog
+  command failed with `Employees directory not found: node_modules/@openlabor/employees`.
+  The cause: the catalog path was `resolve(__dirname, '../..')`, which is the repo root
+  in a git clone and `node_modules/@openlabor` in an npm install — and the check was
+  only that the directory existed, which it does. So the remote fallback never ran and
+  `list`, `search` and `install` all threw for anyone who was not working inside a
+  clone.
+
+  `prepack` now copies `employees/` and `skills/` into `cli/catalog/`, and path
+  resolution looks there first, then at the repo root, and reports the catalog as
+  unavailable rather than throwing when neither holds one. The free path works offline
+  after install.
+
+- **`registry.json` regenerated.** It listed 15 employees and 26 skills. There are 16
+  and 52.
+
+### Changed
+
+- **Published as `openlabor` instead of `@openlabor/cli`.** Every README and every post
+  says `npx openlabor`, which was a 404, because npm does not infer a scope — the only
+  published name was the scoped one. The short name is the one people type, so it is
+  now the real package rather than a forwarder.
+
+  `@openlabor/cli` continues to work: it is published from `cli-alias/` as a thin
+  alias that depends on `openlabor` and hands every command over. Anything already
+  pinned to the scoped name keeps running and stops being stuck on 2.2.0. It is
+  deprecated on npm with a pointer to the short name.
+
+  `openlabor update` installs `openlabor` now.
+
 ## [2.2.0] - 2026-08-07
 
 ### Changed

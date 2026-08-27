@@ -1,171 +1,166 @@
 <p align="center">
-  <img src="https://openlabor.ai/images/og.png" alt="OpenLabor" width="100%">
+  <img src=".github/assets/hero.png" alt="OpenLabor — 16 employees, 52 skills, 35 missions, MIT" width="100%">
 </p>
 
 <h1 align="center">OpenLabor</h1>
 
 <p align="center">
-  <strong>Open source AI employees. Browse, install, and pilot them from Claude Code, Cursor, Codex, and more.</strong>
+  <strong>Open source AI employees. Roles, skills and scheduled missions as Markdown files — install them into Claude Code, Cursor or Codex, or run them on the OpenLabor platform.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/OpenLabor/openlabor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT"></a>
-  <a href="https://www.npmjs.com/package/@openlabor/cli"><img src="https://img.shields.io/npm/v/@openlabor/cli.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/openlabor"><img src="https://img.shields.io/npm/v/openlabor.svg" alt="npm"></a>
   <a href="https://x.com/openlaborai"><img src="https://img.shields.io/badge/X-@openlaborai-black.svg?logo=x" alt="X"></a>
 </p>
 
 ---
 
-## Two ways to use OpenLabor
+## What is in this repo
 
-| | Pilot (account required) | Install (free, no account) |
+**16 employees · 52 skills · 35 missions.** Every one of them is Markdown.
+
+```
+employees/cto/EMPLOYEE.md          who Travis is, and what he will not do
+skills/logo-maker/SKILL.md         a workflow: steps, APIs, scoring, examples
+missions/weekly-security-audit/    a job that runs on a schedule
+```
+
+There is no DSL and no graph. The people who write these at our customers are not
+engineers, and a Markdown file is the only format they will actually edit.
+
+## Try it in 60 seconds
+
+No account, no key. The catalog ships inside the package, so this works offline
+after the first install.
+
+```bash
+npx openlabor list roles                 # 16 employees
+npx openlabor list skills                # 52 skills
+npx openlabor search logo                # search across both
+
+npx openlabor install skill logo-maker   # copy the workflow into your editor
+npx openlabor install role cto           # copy a persona into your editor
+```
+
+`install` auto-detects your tool and writes a local prompt file. Nothing phones home.
+
+| Target | Flag | Writes to |
 |---|---|---|
-| **What** | Chat with AI employees running on the platform | Copy skill workflows and employee personas into your coding tool as local prompts |
-| **How** | `openlabor ask madison "task"` | `openlabor install skill logo-maker` |
-| **Runs where** | On the OpenLabor platform (powered by OpenClaw) | Locally in your coding tool |
-| **Needs account** | Yes — API key from your dashboard | No |
-| **Employee actually works** | Yes — uses tools, APIs, skills, produces real output | No — your coding tool roleplays the persona |
-| **Best for** | Teams using OpenLabor to automate work | Developers trying workflows before signing up |
+| Claude Code | `--target claude` | `.claude/commands/<name>.md` |
+| Cursor | `--target cursor` | `.cursor/rules/<name>.mdc` |
+| Codex | `--target codex` | `codex.md` (appended) |
+| OpenCode | `--target opencode` | `opencode.md` (appended) |
+| Windsurf | `--target windsurf` | `.windsurfrules` (appended) |
+| Plain file | `--target raw` | `./<name>.md` |
+
+Then, in Claude Code:
+
+```
+You:    /logo-maker
+Claude: [runs the workflow — concepts, generation, scoring]
+```
+
+Your tool does the work. The file is the skill.
 
 ---
 
-## Pilot your team
+## Two ways to use OpenLabor
 
-Chat with your AI employees from the terminal. They run on the platform with all their skills, tools, and API credentials already configured.
+| | Install (free, no account) | Pilot (account required) |
+|---|---|---|
+| **What** | Copy skills and personas into your coding tool as local prompts | Talk to AI employees running on the OpenLabor platform |
+| **How** | `openlabor install skill logo-maker` | `openlabor ask madison "task"` |
+| **Runs where** | Locally, in your tool | On the platform |
+| **Needs an account** | No | Yes |
+| **Does real work** | Your tool roleplays the persona | Yes — real tools, APIs, credentials, and its own computer |
+| **Best for** | Trying the workflows before signing up | Teams putting AI employees to work |
+
+### Pilot your team
 
 ```bash
-npm install -g @openlabor/cli
+npm install -g openlabor
 
-# Connect (one-time — get your key from Settings > API Keys)
-openlabor login <api-key>
-
-# See who's available
-openlabor team
-
-# Send a message (auto-routes to best employee)
+openlabor login                          # browser sign-in
+openlabor team                           # who is on your team
 openlabor ask "Draft 3 tweet threads about our launch"
-
-# Continue the conversation
-openlabor chat "Make the second one more casual"
-
-# Message a specific employee
 openlabor ask cto "Review our auth module"
-
-# View conversations
+openlabor chat "Make the second one more casual"
 openlabor history
-openlabor history madison
-
-# Scheduled tasks
 openlabor tasks madison
 openlabor run <task-id>
 ```
 
-Works from any coding tool that can run shell commands — Claude Code, Cursor, Codex, Windsurf, or just your terminal.
+Works from any tool that can run a shell command, or from your terminal.
+Run `openlabor --help` for the full command list, including `hire`, `upload`,
+`download`, `skill create` and `context`.
 
 ---
 
-## Install skills for free
-
-Browse and install employee personas and skill workflows as local prompts. No account needed.
-
-```bash
-npx openlabor install skill logo-maker      # works with Claude Code, Cursor, Codex, OpenCode, Windsurf
-npx openlabor install employee cto          # install an AI persona
-```
-
-Auto-detects your tool. Browse what's available:
-
-```bash
-npx openlabor list skills                   # 25+ skills
-npx openlabor list employees                # 15 AI employees
-npx openlabor search "logo"                 # search across both
-```
-
-### Quick start
-
-```
-You:    I need a logo for my new project
-Claude: [activates /logo-maker — generates concepts with Flux and Imagen]
-
-You:    /seo-optimization
-Claude: [analyzes your content, suggests keywords, rewrites meta tags]
-
-You:    /cold-outreach
-Claude: [researches prospects, writes personalized emails, schedules follow-ups]
-```
-
-Every skill is a complete workflow — not just a prompt, but step-by-step instructions with APIs, scoring frameworks, and examples.
-
----
-
-## What's inside
-
-### 15 AI Employees
-
-Each employee has a role, personality, behavior guidelines, and boundaries.
+## The 16 employees
 
 | Role | Name | Department | Tagline |
-|------|------|-----------|---------|
-| **CTO** | Travis | Engineering | Ships code while you sleep |
-| **CMO** | Madison | Marketing | Runs your entire marketing engine |
-| **SDR** | Hunter | Sales | Books meetings you never could |
-| **COO** | Oliver | Operations | Runs ops so you don't have to |
-| **X Manager** | Xavier | Marketing | Turns your X into a growth machine |
-| **Designer** | Daisy | Design | Designs like it has taste |
-| **Content Writer** | Penelope | Content | Writes better than your last hire |
-| **Data Analyst** | Derek | Data | Finds the insight you missed |
-| **HR Manager** | Holly | HR | Hires faster than recruiters |
-| **Logo Designer** | Logan | Design | Crafts logos that stick |
-| **Brand Advisor** | Brandon | Marketing | Finds the perfect name before someone else does |
-| **Accountant** | Penny | Finance | Your books, always clean |
-| **Lead Finder** | Chase | Sales | Fills your pipeline while you sleep |
-| **Social Manager** | Sierra | Marketing | Grows your following on autopilot |
-| **Email Secretary** | Reed | Operations | Inbox zero, every single day |
+|---|---|---|---|
+| Accountant | Penny | Finance | Your books, always clean |
+| Data Analyst | Derek | Data | Finds the insight you missed |
+| Domain & Brand Advisor | Brandon | Marketing | Finds the perfect name before someone else does |
+| CMO | Madison | Marketing | Runs your entire marketing engine |
+| COO | Oliver | Operations | Runs ops so you don't have to |
+| CTO | Travis | Engineering | Ships code while you sleep |
+| Designer | Daisy | Design | Designs like it has taste |
+| Email Secretary | Reed | Operations | Inbox zero, every single day |
+| HR Manager | Holly | HR | Hires faster than recruiters |
+| Lead Finder | Chase | Sales | Fills your pipeline while you sleep |
+| Logo Designer | Logan | Design | Crafts logos that stick |
+| SDR | Hunter | Sales | Books meetings you never could |
+| Social Media Manager | Sierra | Marketing | Grows your following on autopilot |
+| Travel Agent | Tara | Operations | Books the trip you'd plan yourself |
+| Content Writer | Penelope | Content | Writes better than your last hire |
+| X Manager | Xavier | Marketing | Turns your X into a growth machine |
 
-### 25+ Skills
+Browse them in [`employees/`](employees/).
 
-Skills give employees specialized capabilities — workflows, APIs, and scoring frameworks.
+## The 52 skills
 
-| Category | Skills |
-|----------|--------|
-| **Content Creation** | Image Generator, Video Generator, Logo Maker, Animate Story, Content Humanizer |
-| **Social Media** | Instagram, LinkedIn, Reddit, YouTube, X Strategy |
-| **Sales** | Cold Outreach, Lead Qualification, Web Research |
-| **Marketing** | SEO Optimization, Marketing Psychology, Competitor Analysis, News Trends |
-| **Productivity** | Airtable Manager, Google Calendar, Stripe Manager |
-| **Analytics** | Data Analyst, Content Summarizer |
-| **Agent Intelligence** | Prompt Engineering, Self-Improving Agent |
+| Category | Count | Examples |
+|---|---|---|
+| Strategy | 11 | Bezos customer obsession, Munger inversion thinking, Taleb antifragility, competitor analysis |
+| Content Creation | 7 | Image generator, video generator, content humanizer, YouTube shorts pipeline |
+| Marketing | 7 | SEO optimization, conversion audit, growth experiment, marketing psychology |
+| Sales | 6 | Cold outreach, lead qualification, high-volume outreach |
+| Research | 5 | Web research, multi-platform research, news trend monitor, domain checker |
+| Finance | 4 | Stripe manager, finance dashboard, capital allocation, risk assessment |
+| Social Media | 4 | Instagram, LinkedIn, Reddit, YouTube |
+| Productivity | 3 | Airtable manager, Google Calendar, meeting extractor |
+| Agent Intelligence | 2 | Prompt engineering, self-improving agent |
+| Analytics, Design, other | 3 | Data analyst, logo maker |
 
-> Browse all skills in [`skills/`](skills/)
+Browse them in [`skills/`](skills/).
 
-### 35 Missions
+## The 35 missions
 
-Missions are recurring tasks that run on a schedule — the real work.
+Missions are the recurring work — the part that runs whether anyone asks or not.
 
-| Category | Examples |
-|----------|---------|
-| **Marketing** | Daily Social Content Engine, Brand Mention Monitor, Weekly X Analytics |
-| **Sales** | Daily Outbound Prospecting, Pipeline Follow-Up Sweep, Lead List Builder |
-| **Engineering** | Daily Code Review Sweep, Weekly Security Audit, Dependency Updates |
-| **Design** | Weekly Social Graphics Batch, Monthly Brand Consistency Report |
-| **Operations** | Daily Inbox Triage, Weekly Ops Dashboard, Calendar Prep |
-| **Finance** | Daily Expense Reconciliation, Weekly Cash Flow Forecast |
+| Category | Count | Examples |
+|---|---|---|
+| Marketing | 7 | Brand mention monitor, campaign performance review, daily engagement sweep |
+| Operations | 6 | Daily calendar prep, team standup summary, monthly process audit |
+| Design | 5 | UI component audit, brand consistency report, logo refresh concepts |
+| Sales | 5 | Intent signal monitor, pipeline follow-up sweep, weekly lead list builder |
+| Analytics | 2 | Weekly revenue dashboard, monthly market research report |
+| Branding | 2 | Monthly brand health report, quarterly naming workshop |
+| Content | 2 | Daily SEO blog draft, monthly content calendar planning |
+| Engineering | 2 | Weekly dependency update, weekly security audit |
+| Finance | 2 | Monthly financial close, weekly cash flow forecast |
+| HR | 2 | Employee sentiment scan, onboarding feedback report |
 
-> Browse all missions in [`missions/`](missions/)
+Browse them in [`missions/`](missions/).
 
 ---
 
-## How it works
+## The file format
 
-Everything is a Markdown file. No code required.
-
-```
-employees/cto/EMPLOYEE.md     → who Travis is, how he behaves
-skills/logo-maker/SKILL.md    → step-by-step logo generation workflow
-missions/daily-code-review/   → scheduled task that runs every morning
-```
-
-An employee is not a prompt. It's a complete definition:
+An employee is a directory with an `EMPLOYEE.md`:
 
 ```yaml
 ---
@@ -182,135 +177,43 @@ skills:
 ---
 ```
 
-A skill is a full workflow:
+A skill is a full workflow, not a one-line prompt:
 
 ```yaml
 ---
 name: logo-maker
 description: Generate professional logomarks and wordmarks
+category: Design
 triggers:
   - "make a logo"
   - "create logo"
-  - "design logo"
 ---
 
-# Step 1: Understand the Brand
-# Step 2: Craft the Prompt
+# Step 1: Understand the brand
+# Step 2: Craft the prompt
 # Step 3: Generate with Replicate (Flux)
 # Step 4: Generate with Google Imagen
-# Step 5: Present and Compare
-# Step 6: Refine
+# Step 5: Score and pick
 ```
 
----
+A mission is the same shape plus a schedule.
 
-## Platform workspace
+## What is not in this repo
 
-When you hire an employee on the platform, the `EMPLOYEE.md` becomes `SOUL.md` — the personality core. The platform builds a full workspace around it:
+The hosted product. OpenLabor is a workspace where several people task the same
+employees in one thread, each employee on its own machine, with one memory the whole
+company writes to. That runtime is not open source.
 
-```
-workspaces/{org}/
-  _shared/                    ← shared across all employees
-    assets/                   ← creative library (logos, images)
-    crm/                      ← contacts, leads, deals
-    docs/                     ← brand guides, playbooks
-    data/                     ← reports, research
-
-  {employee}/                 ← one per hired employee
-    SOUL.md                   ← personality + behavior (from EMPLOYEE.md)
-    USER.md                   ← org profile, shared knowledge, team roster
-    AGENTS.md                 ← execution rules
-    TOOLS.md                  ← available tools and how to use them
-    IDENTITY.md               ← role identity
-    MEMORY.md                 ← what this employee remembers
-    HEARTBEAT.md              ← periodic task checklist
-    skills/                   ← installed skill workflows
-      logo-maker/SKILL.md
-      seo-optimization/SKILL.md
-    shared/                   ← symlink to org _shared/ directory
-```
-
-**Key files:**
-
-| File | Scope | Who manages it |
-|------|-------|---------------|
-| **SOUL.md** | Per-employee | Platform (from EMPLOYEE.md template) |
-| **USER.md** | Per-employee copy, same content | Platform (auto-synced from DB) |
-| **AGENTS.md** | Per-employee | Platform (execution rules) |
-| **MEMORY.md** | Per-employee | The employee (remembers things across sessions) |
-| **skills/** | Per-employee | Platform (installed via dashboard) |
-| **shared/** | Org-wide | All employees (read/write shared files) |
-
-**Shared knowledge** — employees share org-wide knowledge (brand voice, product decisions, competitor intel) via an API. It propagates to every coworker's `USER.md` within seconds. A daily cleanup job deduplicates and organizes entries automatically.
-
-**Shared files** — the `shared/` directory is the same physical folder for all employees in an org. One employee saves a brand guide, another reads it. Works for images, CSVs, documents — anything.
-
----
-
-## All commands
-
-```bash
-# Pilot (requires account)
-openlabor login <api-key>                        # connect to your org
-openlabor login <api-key> --url <url>            # connect to self-hosted instance
-openlabor logout                                 # clear credentials
-openlabor whoami                                 # show current login
-openlabor team                                   # list your live employees
-openlabor ask "<message>"                        # auto-routes to best employee, new conversation
-openlabor ask <employee> "<message>"             # new conversation with specific employee
-openlabor chat "<message>"                       # continue last conversation
-openlabor chat <employee> "<message>"            # continue with specific employee
-openlabor history                                # list all conversations
-openlabor history <employee>                     # list employee's conversations
-openlabor tasks <employee>                       # list scheduled tasks
-openlabor run <task-id>                          # run a scheduled task now
-
-# Install (free, no account)
-openlabor list employees                         # browse employees
-openlabor list skills                            # browse skills
-openlabor search <query>                         # search across both
-openlabor install employee <name> [--target t]   # install a persona
-openlabor install skill <name> [--target t]      # install a workflow
-openlabor targets                                # list supported tools
-
-# Maintenance
-openlabor version                                # show version
-openlabor update                                 # upgrade CLI
-openlabor outdated                               # list stale installs
-openlabor update-skills                          # re-install all to latest
-openlabor config <key> <value>                   # set config
-```
-
----
+What is here is the catalog and the CLI, under MIT. If you want the files, take them.
+If you want the multiplayer part, that is [openlabor.ai](https://openlabor.ai) —
+$69/month, seven days free, no seats.
 
 ## Contributing
 
-Every employee, skill, and mission is a Markdown file. No code required to contribute.
+New skills, missions and employees are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+for the format and what gets rejected. Short version: real steps, real APIs, a scoring
+rule instead of "pick the best one", and the failure cases.
 
-**Add an employee** — create `employees/your-role/EMPLOYEE.md` with personality, skills, behavior guidelines, boundaries.
+## Licence
 
-**Add a skill** — create `skills/your-skill/SKILL.md` with frontmatter, workflow steps, examples, optional API integrations.
-
-**Add a mission** — create `missions/your-mission/MISSION.md` with schedule, role, and prompt.
-
-**Ideas:** Product Manager, Recruiter, CFO, Legal Counsel, Pricing Advisor, Contract Reviewer, Competitor Tracker.
-
-PRs welcome. Open an issue first if the change is significant.
-
----
-
-## Built on OpenClaw
-
-Powered by **[OpenClaw](https://openclaw.com)** — the open source AI agent engine for orchestration, multi-channel messaging, scheduled tasks, and real-time streaming.
-
----
-
-## License
-
-MIT — use however you want, commercially or otherwise.
-
-<p align="center">
-  <a href="https://openlabor.ai">openlabor.ai</a>
-  <br><br>
-  <sub>Built by <a href="https://github.com/yoanndefay">@yoanndefay</a> and the open source community</sub>
-</p>
+MIT. See [LICENSE](LICENSE).

@@ -92,6 +92,13 @@
       "tagline": "Grows your following on autopilot"
     },
     {
+      "slug": "travel-agent",
+      "name": "Tara",
+      "role": "Travel Agent",
+      "department": "Operations",
+      "tagline": "Books the trip you'd plan yourself — if you had the time"
+    },
+    {
       "slug": "writer",
       "name": "Penelope",
       "role": "Content Writer",
@@ -114,21 +121,69 @@
       "category": "Productivity"
     },
     {
+      "slug": "altman-ai-strategy",
+      "name": "Sam Altman - AI Strategy",
+      "description": "Sam Altman's AI-first thinking: rebuilding companies around AI, identifying what AI can do 80% of, AI integration roadmap, when to build vs use existing AI tools, and AI-native product design — from Altman's blog, OpenAI writings, and public talks (2022-2024)",
+      "category": "Strategy"
+    },
+    {
+      "slug": "altman-startup-scaling",
+      "name": "Sam Altman - Startup Scaling",
+      "description": "Sam Altman's scaling playbook: product-market fit signals, do things that don't scale, compound growth optimization, hire missionaries not mercenaries, hard startups vs easy startups, and the narrow wedge strategy — from YC lectures and How to Start a Startup (2014)",
+      "category": "Strategy"
+    },
+    {
       "slug": "animate-story",
       "name": "Animate Story",
       "description": "Turn photos and ideas into anime-style visual stories — generate scene-by-scene illustrated narratives",
       "category": "Content Creation"
     },
     {
+      "slug": "bezos-customer-obsession",
+      "name": "Jeff Bezos - Customer Obsession",
+      "description": "Jeff Bezos's customer-first framework: working backwards (PR/FAQ method), Day 1 vs Day 2 culture, two-way door decisions, 6-pager memo structure, and regret minimization — from Amazon shareholder letters and internal memos",
+      "category": "Strategy"
+    },
+    {
+      "slug": "bezos-operations-flywheel",
+      "name": "Jeff Bezos - Operations Flywheel",
+      "description": "Jeff Bezos's operational excellence framework: flywheel effect design, input vs output metrics, high-velocity decision making, disagree and commit, and two-pizza team structure — from Amazon shareholder letters and internal operating principles",
+      "category": "Strategy"
+    },
+    {
+      "slug": "charlie-inversion-thinking",
+      "name": "Charlie Munger - Inversion Thinking",
+      "description": "Charlie Munger's inversion framework: avoid stupidity before seeking brilliance, pre-mortem analysis, the 25 cognitive biases from 'Psychology of Human Misjudgment', and checklist thinking — from Poor Charlie's Almanack and his Harvard Law School speech",
+      "category": "Strategy"
+    },
+    {
+      "slug": "charlie-mental-models",
+      "name": "Charlie Munger - Mental Models",
+      "description": "Charlie Munger's latticework of mental models: second-order thinking, incentive superpower, Lollapalooza effect, circle of competence, and opportunity cost — from Poor Charlie's Almanack and USC Business School speech",
+      "category": "Strategy"
+    },
+    {
+      "slug": "cialdini-conversion-psychology",
+      "name": "Robert Cialdini - Conversion Psychology",
+      "description": "Applied Cialdini for conversion optimization: landing page persuasion audits, email sequence triggers, sales call frameworks, pricing page psychology, and objection handling through influence principles — from Influence and Pre-Suasion",
+      "category": "Marketing"
+    },
+    {
+      "slug": "cialdini-persuasion-science",
+      "name": "Robert Cialdini - Persuasion Science",
+      "description": "Robert Cialdini's 7 principles of persuasion with practical business applications: reciprocity, scarcity, authority, social proof, commitment & consistency, liking, and unity — from Influence (1984) and Pre-Suasion (2016)",
+      "category": "Marketing"
+    },
+    {
       "slug": "cold-outreach",
       "name": "Cold Outreach",
-      "description": "Execute cold outreach campaigns",
+      "description": "Research prospects, find verified emails with Hunter, and execute a 5-touch personalized outreach sequence over 14 days — turning cold contacts into booked meetings through Gmail with structured tracking and reply handling",
       "category": "Sales"
     },
     {
       "slug": "competitor-analysis",
       "name": "Competitor Analysis",
-      "description": "Monitor competitor activities",
+      "description": "Research competitors — products, pricing, positioning, sentiment, and market gaps — and produce weekly intelligence reports and sales battlecards",
       "category": "Strategy"
     },
     {
@@ -138,10 +193,40 @@
       "category": "Content Creation"
     },
     {
+      "slug": "content-repurpose",
+      "name": "Content Repurpose Pipeline",
+      "description": "Atomize one piece of content into platform-native posts for X, LinkedIn, Instagram, Reddit, and YouTube — with viral scoring and dedup",
+      "category": "Content Creation"
+    },
+    {
       "slug": "content-summarizer",
       "name": "Content Summarizer",
       "description": "Summarize any content — URLs, articles, PDFs, videos, documents — into actionable formats",
       "category": "Content Creation"
+    },
+    {
+      "slug": "conversion-audit",
+      "name": "Conversion Audit",
+      "description": "Score landing pages across 8 CRO dimensions from a URL — plus survey-to-lead-magnet pipeline from CSV data",
+      "category": "Marketing"
+    },
+    {
+      "slug": "crowdtest-sales",
+      "name": "CrowdTest Sales",
+      "description": "Sales playbook for CrowdTest by OpenLabor — AI audience simulation reports",
+      "category": "Sales"
+    },
+    {
+      "slug": "dalio-decision-systems",
+      "name": "Ray Dalio - Decision Systems",
+      "description": "Ray Dalio's decision frameworks: expected value calculations, probability-weighted scenario analysis, stress-testing through worst-case analysis, and the machine metaphor for business design — from Principles (2017) and Bridgewater investment frameworks",
+      "category": "Strategy"
+    },
+    {
+      "slug": "dalio-principles-machine",
+      "name": "Ray Dalio - Principles Machine",
+      "description": "Ray Dalio's systematic management framework: radical transparency, idea meritocracy, believability-weighted decisions, the 5-step process, and pain + reflection = progress — from Principles (2017) and Bridgewater's operating principles",
+      "category": "Strategy"
     },
     {
       "slug": "data-analyst",
@@ -152,8 +237,20 @@
     {
       "slug": "domain-checker",
       "name": "domain-checker",
-      "description": "",
-      "category": ""
+      "description": "Check domain name availability in bulk via RDAP and DNS — up to 20 domains per request, no registrar account",
+      "category": "Research"
+    },
+    {
+      "slug": "finance-dashboard",
+      "name": "Finance Dashboard",
+      "description": "Revenue reports, MRR/ARR tracking, churn analysis, invoice aging, and financial health metrics — powered by Stripe data",
+      "category": "Finance"
+    },
+    {
+      "slug": "flight-search",
+      "name": "Flight Search",
+      "description": "Search Google Flights for cheapest fares, compare dates, filter by cabin class, stops, airlines, and departure times — powered by fli",
+      "category": "Research"
     },
     {
       "slug": "generate-video",
@@ -168,6 +265,18 @@
       "category": "Productivity"
     },
     {
+      "slug": "growth-experiment",
+      "name": "Growth Experiment Engine",
+      "description": "A/B test tracking with statistical significance — create experiments, log data, score winners with bootstrap CI + Mann-Whitney U, auto-promote to a living playbook",
+      "category": "Marketing"
+    },
+    {
+      "slug": "high-volume-outreach",
+      "name": "High Volume Cold Outreach",
+      "description": "Execute cold outreach campaigns at scale — 500+ emails/day with Instantly, multi-account rotation, automatic warmup, A/B testing, and campaign analytics",
+      "category": "Sales"
+    },
+    {
       "slug": "image-generator",
       "name": "Image Generator",
       "description": "Generate images from text prompts using Flux, Imagen, and other AI models",
@@ -178,6 +287,12 @@
       "name": "Instagram Manager",
       "description": "Publish posts, reels, carousels, manage comments, DMs, and track analytics on Instagram via Composio",
       "category": "Social Media"
+    },
+    {
+      "slug": "instantly-outbound",
+      "name": "Instantly Outbound",
+      "description": "Manage cold email campaigns at scale — create campaigns, import leads, track warmup, monitor deliverability, and analyze performance via Composio",
+      "category": "Sales"
     },
     {
       "slug": "lead-qualification",
@@ -195,13 +310,25 @@
       "slug": "logo-maker",
       "name": "logo-maker",
       "description": "Generate professional logomarks and wordmarks using AI image generation",
-      "category": ""
+      "category": "Design"
     },
     {
       "slug": "marketing-psychology",
       "name": "Marketing Psychology",
       "description": "Apply behavioral psychology and persuasion frameworks to craft content that drives action",
       "category": "Marketing"
+    },
+    {
+      "slug": "meeting-extractor",
+      "name": "Meeting Action Extractor",
+      "description": "Extract decisions, action items, owners, deadlines, and follow-ups from meeting transcripts — structured output for project tracking",
+      "category": "Productivity"
+    },
+    {
+      "slug": "multi-platform-research",
+      "name": "Multi-Platform Research",
+      "description": "Free read & search access to 16+ platforms — Twitter, YouTube, Reddit, GitHub, web, RSS, and more — via Agent Reach",
+      "category": "Research"
     },
     {
       "slug": "news-trend-monitor",
@@ -230,13 +357,49 @@
     {
       "slug": "seo-optimization",
       "name": "SEO Optimization",
-      "description": "Optimize content for search engines — keywords, meta tags, structure, and technical SEO",
+      "description": "Optimize content for search engines — striking distance keywords, competitive intelligence, funnel-based prioritization, and technical SEO",
       "category": "Marketing"
     },
     {
       "slug": "stripe-manager",
       "name": "Stripe Manager",
       "description": "Manage customers, invoices, subscriptions, payments, and billing via Stripe Composio connector",
+      "category": "Finance"
+    },
+    {
+      "slug": "taleb-antifragility",
+      "name": "Nassim Taleb - Antifragility",
+      "description": "Nassim Taleb's antifragility framework: classifying fragile/robust/antifragile systems, barbell strategy, via negativa, skin in the game test, Lindy effect for technology choices, and optionality design — from Antifragile (2012) and Skin in the Game (2018)",
+      "category": "Strategy"
+    },
+    {
+      "slug": "taleb-risk-intelligence",
+      "name": "Nassim Taleb - Risk Intelligence",
+      "description": "Nassim Taleb's risk framework: Black Swan identification, fat tail awareness, ergodicity (what kills you vs what averages out), precautionary principle, and asymmetric upside bets — from The Black Swan (2007) and Antifragile (2012)",
+      "category": "Strategy"
+    },
+    {
+      "slug": "target-competitors-leads",
+      "name": "Target Competitors Leads",
+      "description": "Scrape competitor negative reviews from Trustpilot and G2, enrich reviewer contacts, and send personalized outreach to convert unhappy competitor customers",
+      "category": "Sales"
+    },
+    {
+      "slug": "wan2.7-image-skill",
+      "name": "wan2.7-image-skill",
+      "description": "基于 wan2.7-image 模型，支持多种图像生成与编辑能力，包括文本生成图像、文本生成多图组合、基于图像生成多图组合、单图编辑以及基于多张参考图的图像合成，适用于多样化的创作场景。主要覆盖以下三类任务：1、图像生成——如“画一只猫”、“生成一张穿红裙的女士在咖啡馆的照片”等；2、图像编辑——如“将图中的汽车换成自行车”、“这张图片背景换成室外”、“把图中衣服颜色从蓝色改成绿色”等；3、风格迁移——如“将这张照片转为 <xxx> 风格”、“用 <yyy> 风格重绘这张建筑图”、“参考 <yyy> 的画风来改变 <zzz> 的风格”等。触发条件：只要用户意图涉及 AI 驱动的图像创作、生成、编辑、修改、重构或风格调整——无论其表述是直接指令（如“生成图片”）、口语化请求（如“帮我画只小狗”）还是隐含需求（如“让这张图更梦幻”）——均应激活本技能。",
+      "category": ""
+    },
+    {
+      "slug": "warren-capital-allocation",
+      "name": "Warren Buffett - Capital Allocation",
+      "description": "Warren Buffett's capital allocation framework for deciding when to reinvest, acquire, buy back shares, pay dividends, or hold cash — from Berkshire Hathaway shareholder letters and The Essays of Warren Buffett",
+      "category": "Finance"
+    },
+    {
+      "slug": "warren-risk-assessment",
+      "name": "Warren Buffett - Risk Assessment",
+      "description": "Warren Buffett's risk framework: circle of competence, margin of safety, Mr. Market metaphor, when to be greedy vs fearful, and distinguishing permanent from temporary loss — from Berkshire letters and The Intelligent Investor",
       "category": "Finance"
     },
     {
@@ -258,10 +421,10 @@
       "category": "Social Media"
     },
     {
-      "slug": "openlabor",
-      "name": "OpenLabor",
-      "description": "Chat with your AI employees from the terminal — ask, chat, auto-route, and manage conversations",
-      "category": "Pilot"
+      "slug": "youtube-shorts-pipeline",
+      "name": "YouTube Shorts Pipeline",
+      "description": "Automated YouTube Shorts creation — from topic to published video with AI script, visuals, voiceover, captions, and upload",
+      "category": "Content Creation"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
-  "name": "@openlabor/cli",
-  "version": "2.2.0",
+  "name": "openlabor",
+  "version": "2.2.1",
   "description": "Browse, install, and pilot OpenLabor AI employees from Claude Code, Codex, Cursor, OpenCode, and more",
   "type": "module",
   "bin": {
@@ -13,13 +13,16 @@
     "bin/",
     "lib/",
     "commands/",
+    "catalog/",
     "VERSION",
     "registry.json",
     "CHANGELOG.md",
     "README.md"
   ],
   "scripts": {
-    "gen:registry": "node scripts/generate-registry.js"
+    "gen:registry": "node scripts/generate-registry.js",
+    "bundle:catalog": "node scripts/bundle-catalog.js",
+    "prepack": "npm run gen:registry && npm run bundle:catalog"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,7 @@
 ---
 name: logo-maker
 description: Generate professional logomarks and wordmarks using AI image generation
+category: Design
 triggers:
   - "make a logo"
   - "create logo"

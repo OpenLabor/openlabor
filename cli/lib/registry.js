@@ -3,8 +3,30 @@ import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OPENLABOR_BASE = resolve(__dirname, '../..');
 const MANIFEST_PATH = resolve(__dirname, '../registry.json');
+
+/**
+ * Where the catalog lives on disk.
+ *
+ * Two layouts have to work. In a git clone the CLI sits at <repo>/cli, so
+ * employees/ and skills/ are two levels up. In an npm install the package sits
+ * at node_modules/openlabor and there is no repo above it, so `prepack` copies
+ * both directories into cli/catalog/ and that is what ships.
+ *
+ * The previous version resolved '../..' unconditionally and only checked that
+ * the directory itself existed. Inside node_modules that resolves to
+ * node_modules/@openlabor, which does exist, so every catalog command went
+ * looking for @openlabor/employees and threw instead of falling back.
+ */
+function resolveCatalogBase() {
+  const candidates = [resolve(__dirname, '../catalog'), resolve(__dirname, '../..')];
+  for (const base of candidates) {
+    if (existsSync(join(base, 'employees')) && existsSync(join(base, 'skills'))) return base;
+  }
+  return null;
+}
+
+const OPENLABOR_BASE = resolveCatalogBase();
 
 const GITHUB_RAW = 'https://raw.githubusercontent.com/OpenLabor/openlabor/main';
 
@@ -95,7 +117,7 @@ function listFromManifest(type) {
  * Check whether the local openlabor repo is available.
  */
 function isLocalAvailable() {
-  return existsSync(OPENLABOR_BASE);
+  return OPENLABOR_BASE !== null;
 }
 
 /**

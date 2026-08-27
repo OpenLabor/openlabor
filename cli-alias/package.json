@@ -1,0 +1,41 @@
+{
+  "name": "@openlabor/cli",
+  "version": "2.2.1",
+  "description": "Deprecated alias for `openlabor` \u2014 install `openlabor` instead",
+  "type": "module",
+  "bin": {
+    "openlabor": "./bin/openlabor.js",
+    "ol": "./bin/openlabor.js"
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ],
+  "dependencies": {
+    "openlabor": "^2.2.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenLabor/openlabor.git",
+    "directory": "cli-alias"
+  },
+  "homepage": "https://github.com/OpenLabor/openlabor#readme",
+  "bugs": {
+    "url": "https://github.com/OpenLabor/openlabor/issues"
+  },
+  "author": "OpenLabor",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "openlabor",
+    "ai",
+    "employees",
+    "skills",
+    "ai-agents"
+  ]
+}

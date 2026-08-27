@@ -1,3 +1,13 @@
+---
+name: domain-checker
+description: Check domain name availability in bulk via RDAP and DNS — up to 20 domains per request, no registrar account
+category: Research
+triggers:
+  - "is this domain available"
+  - "check these domains"
+  - "find a domain"
+---
+
 # Domain Checker
 
 Check domain name availability in bulk using RDAP and DNS lookups.

@@ -21,7 +21,7 @@ const REGISTRY_URL = 'https://raw.githubusercontent.com/OpenLabor/openlabor/main
  * `openlabor update` got a 404, and had that name ever been squatted they would
  * have installed a stranger's code globally on our own instruction.
  */
-const PACKAGE_NAME = '@openlabor/cli';
+const PACKAGE_NAME = 'openlabor';
 
 /**
  * Compare two semver strings. Returns true if a > b.
