@@ -232,7 +232,7 @@ export function printHelp() {
   console.log(`  ${colors.yellow}history${colors.reset}                                List all conversations`);
   console.log(`  ${colors.yellow}history <employee>${colors.reset}                    List employee's conversations`);
   console.log(`  ${colors.yellow}upload <employee> <path>${colors.reset}               Send a file or folder to their workspace`);
-  console.log(`  ${colors.yellow}upload --hq <path>${colors.reset}                     Send it to HQ, shared with every employee`);
+  console.log(`  ${colors.yellow}upload --shared <path>${colors.reset}                 Send it to the shared folder, readable by everyone`);
   console.log(`  ${colors.yellow}download <employee> [dest.zip]${colors.reset}         Get their whole workspace as a zip`);
   console.log(`  ${colors.yellow}tasks <employee>${colors.reset} / ${colors.yellow}run <task-id>${colors.reset}       List scheduled tasks, then run one now`);
   console.log('');

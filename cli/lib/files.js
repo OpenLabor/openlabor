@@ -95,15 +95,15 @@ export async function upload(employeeIdOrName, localPath, opts = {}) {
 }
 
 /**
- * Upload into the org's SHARED hq/ folder, which every employee reads.
+ * Upload into the org's `shared/` folder, which every employee reads.
  *
  * Not a flag on `upload` by accident: the two take different routes. An
  * employee upload goes through that employee's workspace tool, which is fenced
- * to their own directory — `upload cmo x.md --dir hq` writes cmo/hq/x.md, a
- * private folder that merely looks shared. Reaching the real hq/ needs the
+ * to their own directory — `upload cmo x.md --dir shared` writes cmo/shared/x.md, a
+ * private folder that merely looks shared. Reaching the real shared/ needs the
  * org-scoped workspace route, which is what this uses.
  */
-export async function uploadToHq(localPath, opts = {}) {
+export async function uploadToShared(localPath, opts = {}) {
   const { dir: subDir = '', overwrite = false } = opts;
   if (!existsSync(localPath)) throw new Error(`No such file or directory: ${localPath}`);
 
@@ -120,7 +120,7 @@ export async function uploadToHq(localPath, opts = {}) {
 
   for (const f of files) {
     const inner = subDir ? `${subDir.replace(/^\/+|\/+$/g, '')}/${f.rel}` : f.rel;
-    const dest = `hq/${inner}`;
+    const dest = `shared/${inner}`;
 
     // COMPANY.md is the company brain. Writing the file alone leaves the DB and
     // the memory backend behind, so the brain reads as empty everywhere except

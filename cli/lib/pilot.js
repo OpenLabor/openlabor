@@ -390,7 +390,7 @@ export async function updateInstalledSkill({ employee, skill, instruction, name,
   return { employee: emp, skill: match };
 }
 
-/** The company brain (hq/COMPANY.md) — what every employee reads before working. */
+/** The company brain — what every employee reads before working. */
 export async function getContext() {
   const { client } = getClient();
   const org = await client.get('/api/org');

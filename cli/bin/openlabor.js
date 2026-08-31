@@ -9,7 +9,7 @@ import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
 import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, getContext, setContext, listCatalogSkills, listInstalledSkills } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
-import { upload, uploadToHq, download } from '../lib/files.js';
+import { upload, uploadToShared, download } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -403,21 +403,33 @@ async function main() {
 
     case 'upload': {
       // openlabor upload <employee> <path> [--dir <subdir>] [--overwrite]
-      // openlabor upload --hq <path> [--dir <subdir>] [--overwrite]
+      // openlabor upload --shared <path> [--dir <subdir>] [--overwrite]
       // Employee first, like every other pilot command — except for the shared
-      // HQ folder, which belongs to nobody and so takes no employee.
+      // folder, which belongs to nobody and so takes no employee.
+      //
+      // `--hq` was the flag until 2026-08-31. It is refused rather than
+      // aliased: the folder was renamed with no alias, and a flag that keeps
+      // working under the old name is a script that keeps saying `hq` long
+      // after nothing else does. The refusal names the new flag, which is what
+      // an alias would have hidden.
       if (sub === '--hq') {
-        const hqPath = rest[0];
-        let hqDir = '';
-        let hqOverwrite = false;
+        fail(
+          '`--hq` was renamed to `--shared` on 2026-08-31, along with the folder itself.',
+          'Usage: openlabor upload --shared <file-or-dir> [--dir <subdir>] [--overwrite]',
+        );
+      }
+      if (sub === '--shared') {
+        const sharedPath = rest[0];
+        let sharedDir = '';
+        let sharedOverwrite = false;
         for (let i = 1; i < rest.length; i++) {
-          if (rest[i] === '--dir' && rest[i + 1]) hqDir = rest[++i];
-          else if (rest[i] === '--overwrite') hqOverwrite = true;
+          if (rest[i] === '--dir' && rest[i + 1]) sharedDir = rest[++i];
+          else if (rest[i] === '--overwrite') sharedOverwrite = true;
         }
-        if (!hqPath) fail('Missing path.', 'Usage: openlabor upload --hq <file-or-dir> [--dir <subdir>] [--overwrite]');
-        const hqRes = await uploadToHq(hqPath, {
-          dir: hqDir,
-          overwrite: hqOverwrite,
+        if (!sharedPath) fail('Missing path.', 'Usage: openlabor upload --shared <file-or-dir> [--dir <subdir>] [--overwrite]');
+        const sharedRes = await uploadToShared(sharedPath, {
+          dir: sharedDir,
+          overwrite: sharedOverwrite,
           onFile: ({ rel, status, why }) => {
             if (status === 'ok') console.log(`  ${colors.green}\u2713${colors.reset} ${rel}`);
             else if (status === 'skipped') console.log(`  ${colors.dim}\u2013 ${rel}${why ? ` (${why})` : ''}${colors.reset}`);
@@ -425,9 +437,9 @@ async function main() {
           },
         }).catch((err) => fail(err.message));
         console.log('');
-        console.log(`${colors.green}${hqRes.uploaded} file(s)${colors.reset} \u2192 ${colors.bold}HQ${colors.reset} ${colors.dim}(shared with every employee)${colors.reset}`);
-        if (hqRes.skipped.length) console.log(`${colors.dim}${hqRes.skipped.length} skipped${colors.reset}`);
-        if (hqRes.failed.length) console.log(`${colors.yellow}${hqRes.failed.length} failed${colors.reset}`);
+        console.log(`${colors.green}${sharedRes.uploaded} file(s)${colors.reset} \u2192 ${colors.bold}Shared${colors.reset} ${colors.dim}(readable by every employee)${colors.reset}`);
+        if (sharedRes.skipped.length) console.log(`${colors.dim}${sharedRes.skipped.length} skipped${colors.reset}`);
+        if (sharedRes.failed.length) console.log(`${colors.yellow}${sharedRes.failed.length} failed${colors.reset}`);
         break;
       }
 
