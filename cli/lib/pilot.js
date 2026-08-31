@@ -446,3 +446,105 @@ export async function listInstalledSkills(employeeIdOrName) {
     skills: Array.isArray(skills) ? skills : [],
   };
 }
+
+// ── The wiki ──────────────────────────────────────────────────────────────
+//
+// The org's knowledge lives in `wiki/*.md` — pricing, ICP, positioning, the
+// roster, the messaging in each language. It is what every employee reads and
+// what the nightly pass edits, and until now the CLI could not see a word of
+// it: `openlabor context` reads `org_profile.org_context`, a single column that
+// is empty on any org whose brief was split into pages, so it answered
+// "(empty — nothing written yet)" beside sixty kilobytes of prose.
+//
+// The agent surface is `use wiki LIST|GET|SEARCH|WRITE`, which is scoped to one
+// employee. These go through `/api/workspace/*` instead, because a wiki page
+// belongs to the org and not to whoever happens to be reading it.
+
+const WIKI_DIR = 'wiki';
+
+/** `wiki/pricing.md` from `pricing`, and from `wiki/pricing.md`. */
+function wikiPath(slug) {
+  const clean = String(slug || '')
+    .trim()
+    .replace(/^wiki\//, '')
+    .replace(/\.md$/, '');
+  if (!clean || clean.includes('/') || clean.includes('..')) {
+    throw new Error(`Not a wiki slug: ${slug}`);
+  }
+  return `${WIKI_DIR}/${clean}.md`;
+}
+
+/** Every page, newest first, with its size. */
+export async function listWiki() {
+  const { client } = getClient();
+  const tree = await client.get(`/api/workspace/tree?path=${WIKI_DIR}`);
+  const pages = [];
+  const walk = (nodes) => {
+    for (const node of nodes ?? []) {
+      if (node.type === 'file' && node.path?.startsWith(`${WIKI_DIR}/`)) {
+        pages.push({
+          slug: node.path.slice(WIKI_DIR.length + 1).replace(/\.md$/, ''),
+          path: node.path,
+          bytes: node.size ?? 0,
+          modified: node.modified ?? 0,
+        });
+      }
+      walk(node.children);
+    }
+  };
+  walk(tree?.tree);
+  return pages.sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+/** One page's markdown. */
+export async function readWiki(slug) {
+  const { client } = getClient();
+  const path = wikiPath(slug);
+  const file = await client.get(`/api/workspace/file?path=${encodeURIComponent(path)}`);
+  if (typeof file?.content !== 'string') throw new Error(`No wiki page at ${path}`);
+  return { path, content: file.content };
+}
+
+/**
+ * Replace a page.
+ *
+ * Replace, not append, and the same warning `setContext` carries: a page the
+ * team has been writing for months is one PUT away from gone. So the caller is
+ * told what it is about to overwrite, and an empty body is refused outright
+ * rather than treated as "clear the page".
+ */
+export async function writeWiki(slug, text) {
+  const { client } = getClient();
+  const path = wikiPath(slug);
+  if (!text?.trim()) throw new Error(`Refusing to write an empty page to ${path}.`);
+
+  let existing = null;
+  try {
+    const file = await client.get(`/api/workspace/file?path=${encodeURIComponent(path)}`);
+    existing = typeof file?.content === 'string' ? file.content : null;
+  } catch {
+    // A page that is not there yet is a create, not an error.
+  }
+
+  await client.put(`/api/workspace/file?path=${encodeURIComponent(path)}`, { content: text });
+  return { path, created: existing === null, replaced: existing?.length ?? 0, characters: text.length };
+}
+
+/**
+ * Keyword search, narrowed to the wiki.
+ *
+ * `?path=` does the narrowing server-side, and it has to: the result set is
+ * capped, and one large document under `shared/` filled the whole cap on a
+ * search for "pricing" — the wiki page called `pricing` never appeared. Doing
+ * it here instead would have filtered an answer that never contained the rows.
+ */
+export async function searchWiki(query) {
+  const { client } = getClient();
+  if (!query?.trim()) throw new Error('Nothing to search for.');
+  const found = await client.get(
+    `/api/workspace/search?q=${encodeURIComponent(query)}&path=${WIKI_DIR}`,
+  );
+  return (found?.results ?? [])
+    .filter((r) => typeof r.path === 'string' && r.path.startsWith(`${WIKI_DIR}/`))
+    .map((r) => ({ ...r, slug: r.path.slice(WIKI_DIR.length + 1).replace(/\.md$/, '') }));
+}

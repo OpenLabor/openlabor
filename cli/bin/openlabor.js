@@ -7,7 +7,7 @@ import { VERSION } from '../lib/version.js';
 import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallType, performUpdate } from '../lib/updater.js';
 import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
-import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, getContext, setContext, listCatalogSkills, listInstalledSkills } from '../lib/pilot.js';
+import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, getContext, setContext, listCatalogSkills, listInstalledSkills, listWiki, readWiki, writeWiki, searchWiki } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
 import { upload, uploadToShared, download } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
@@ -682,6 +682,99 @@ async function main() {
       }
       console.log(`${colors.green}Created skill${colors.reset} ${colors.bold}${skillName}${colors.reset}${flag('for') ? ` ${colors.dim}→ ${flag('for')}${colors.reset}` : ''}`);
       break;
+    }
+
+    case 'wiki': {
+      // openlabor wiki                       — every page
+      // openlabor wiki read <slug>           — one page's markdown
+      // openlabor wiki write <slug> --file   — replace one page
+      // openlabor wiki search "<query>"      — keyword search across pages
+      //
+      // The org's knowledge lives here, not in `openlabor context`: that one
+      // reads a single column, which is empty on any org whose brief was split
+      // into pages. This reads the pages.
+      if (!sub || sub === 'list') {
+        const pages = await listWiki().catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, pages }));
+          break;
+        }
+        if (pages.length === 0) {
+          console.log(`${colors.dim}(no wiki pages yet)${colors.reset}`);
+          break;
+        }
+        console.log('');
+        console.log(`${colors.bold}Company wiki${colors.reset}  ${colors.dim}(${pages.length} page${pages.length > 1 ? 's' : ''})${colors.reset}`);
+        console.log('');
+        const width = Math.max(...pages.map((p) => p.slug.length));
+        for (const page of pages) {
+          const kb = page.bytes >= 1024 ? `${(page.bytes / 1024).toFixed(1)} kB` : `${page.bytes} B`;
+          console.log(`  ${page.slug.padEnd(width)}  ${colors.dim}${kb}${colors.reset}`);
+        }
+        console.log('');
+        console.log(`${colors.dim}Read one: ${colors.reset}openlabor wiki read ${pages[0].slug}`);
+        break;
+      }
+
+      if (sub === 'read') {
+        const slug = rest[0];
+        if (!slug) fail('Missing slug.', 'Usage: openlabor wiki read <slug>');
+        const page = await readWiki(slug).catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, ...page }));
+          break;
+        }
+        console.log(page.content);
+        break;
+      }
+
+      if (sub === 'search') {
+        const query = rest.filter((a) => !a.startsWith('--')).join(' ');
+        const hits = await searchWiki(query).catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, results: hits }));
+          break;
+        }
+        if (hits.length === 0) {
+          console.log(`${colors.dim}Nothing in the wiki matches ${JSON.stringify(query)}.${colors.reset}`);
+          break;
+        }
+        console.log('');
+        for (const hit of hits) {
+          console.log(`  ${colors.bold}${hit.slug}${colors.reset}`);
+          if (hit.snippet) console.log(`    ${colors.dim}${String(hit.snippet).replace(/\s+/g, ' ').slice(0, 120)}${colors.reset}`);
+        }
+        console.log('');
+        break;
+      }
+
+      if (sub === 'write') {
+        const slug = rest[0];
+        const fi = rest.indexOf('--file');
+        const source = fi >= 0 ? rest[fi + 1] : undefined;
+        if (!slug || !source) {
+          fail('Missing slug or file.', 'Usage: openlabor wiki write <slug> --file <path>');
+        }
+        if (!existsSync(source)) fail(`No such file: ${source}`);
+        const result = await writeWiki(slug, readFileSync(source, 'utf-8')).catch((err) => fail(err.message));
+        if (process.env.OPENLABOR_JSON === '1') {
+          console.log(JSON.stringify({ ok: true, ...result }));
+          break;
+        }
+        // Say what was overwritten. A page the team has been writing for months
+        // is one PUT away from gone, and a silent success is how that happens
+        // without anyone noticing until they look.
+        if (result.created) {
+          console.log(`${colors.green}Created${colors.reset} ${result.path} ${colors.dim}(${result.characters} chars)${colors.reset}`);
+        } else {
+          console.log(`${colors.green}Replaced${colors.reset} ${result.path} ${colors.dim}(${result.replaced} chars \u2192 ${result.characters})${colors.reset}`);
+        }
+        break;
+      }
+
+      console.error(`${colors.red}Error:${colors.reset} Unknown wiki command: ${sub}`);
+      console.error(`Usage: ${colors.dim}openlabor wiki${colors.reset} | ${colors.dim}wiki read <slug>${colors.reset} | ${colors.dim}wiki write <slug> --file <path>${colors.reset} | ${colors.dim}wiki search "<query>"${colors.reset}`);
+      process.exit(1);
     }
 
     case 'context': {

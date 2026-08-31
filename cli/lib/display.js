@@ -245,6 +245,9 @@ export function printHelp() {
   console.log(`  ${colors.yellow}skill list <employee>${colors.reset}                  What one employee has (their workspace files)`);
   console.log(`  ${colors.yellow}skill create "<name>" --file <path>${colors.reset}    Teach a skill (--for <employee>)`);
   console.log(`  ${colors.yellow}context${colors.reset} / ${colors.yellow}context set --file <path>${colors.reset}   Read or replace the company brain`);
+  console.log(`  ${colors.yellow}wiki${colors.reset} / ${colors.yellow}wiki read <slug>${colors.reset}                   The company wiki — what every employee reads`);
+  console.log(`  ${colors.yellow}wiki write <slug> --file <path>${colors.reset}        Replace one page`);
+  console.log(`  ${colors.yellow}wiki search "<query>"${colors.reset}                  Search across the pages`);
   console.log('');
   console.log(`${colors.bold}Update & Config:${colors.reset}`);
   console.log(`  ${colors.yellow}version${colors.reset}                                Show version and install info`);
