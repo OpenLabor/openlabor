@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.0.0] - 2026-08-31
+
+### Breaking
+
+- **`upload --hq` is now `upload --shared`.** The org's shared folder was renamed
+  from `hq/` to `shared/` across the Worker, the dashboard, the container image
+  and the seeded catalogue. `--hq` is refused rather than aliased, and the refusal
+  names the new flag: a flag that keeps working under the old name is a script
+  that keeps saying `hq` long after nothing else does, and the person running it
+  never finds out.
+
+### Added
+
+- **`openlabor wiki`** — the company wiki, which the CLI could not see at all.
+
+      openlabor wiki                      every page, with sizes
+      openlabor wiki read <slug>          one page's markdown
+      openlabor wiki write <slug> --file  replace one page
+      openlabor wiki search "<query>"     keyword search across the pages
+
+  `openlabor context` was never this surface: it reads `org_profile.org_context`,
+  a single column, which is empty on any org whose brief was split into pages. On
+  a real org it answered "(empty — nothing written yet)" beside sixty kilobytes of
+  prose across thirty-two pages.
+
+  `write` replaces, and says what it replaced — a page the team has been writing
+  for months is one PUT away from gone. An empty body is refused rather than
+  treated as "clear the page", the same rule `context set` already carried.
+
+### Fixed
+
+- The company-brain comment pointed at `hq/COMPANY.md`, a file that moved to
+  `wiki/company.md`.
+
 ## [2.2.1] - 2026-08-27
 
 ### Fixed
