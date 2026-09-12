@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.0.1] - 2026-09-12
+
+### Fixed
+
+- **`openlabor upload <employee> <path>` wrote to the workspace ROOT, not to the
+  employee.** `WRITE_FILE` takes a path relative to `/workspace`; the
+  `employeeId` in the body says who is writing, not where. So
+  `openlabor upload seth ads/plan.md` created `/workspace/ads/plan.md` — a new
+  folder at the top of the customer's workspace — printed `✓ ads/plan.md` and
+  exited 0, while `openlabor download seth` (which asks for the employee's own
+  folder) showed nothing new and looked like a stale cache. Nothing was ever
+  lost; nothing was ever where the command said it was. Upload now resolves the
+  same folder `download` does, so the two agree, and `--dir shared` finally
+  means `<employee>/shared/` as its own comment always claimed.
+
+### Added
+
+- **`openlabor rm <employee> <path>`** — the counterpart `upload` never had.
+  Until now a file put in the wrong place, or on the wrong employee in the wrong
+  org, could only be overwritten with a line asking people to ignore it. One
+  file at a time and not recursive, on purpose: the mistake this undoes is a
+  file in the wrong place, and a glob turns it into a folder in the wrong place.
+
 ## [3.0.0] - 2026-08-31
 
 ### Breaking

@@ -58,8 +58,25 @@ export async function upload(employeeIdOrName, localPath, opts = {}) {
 
   const results = { uploaded: 0, merged: [], skipped: [], failed: [] };
 
+  // ⚠️ **`WRITE_FILE` takes a path relative to the WORKSPACE ROOT, not to the
+  // employee.** `employeeId` in the body says WHO is writing; it does not say
+  // where. This loop sent `f.rel` on its own, so `openlabor upload seth
+  // ads/plan.md` wrote `/workspace/ads/plan.md` — a folder at the top of the
+  // customer's workspace — while printing `✓ ads/plan.md` and exiting 0, and
+  // `openlabor download seth` (which asks the API for the employee's OWN
+  // folder) then showed nothing new. The file was never lost and never where
+  // the command said. Measured on 2026-09-12 against the outreachguy CMO: three
+  // files uploaded, `ads/x-ads-*.md` at the workspace root, `cmo/` untouched.
+  //
+  // `folder` is the same expression `download()` below resolves, which is the
+  // point: upload and download have to name the same directory or one of them
+  // is lying. The comment on `uploadToShared()` describing this path as "fenced
+  // to their own directory" is true as of this line and was not before.
+  const folder = employee.template_id || employee.id;
+
   for (const f of files) {
-    const dest = targetDir ? `${targetDir.replace(/\/+$/, '')}/${f.rel}` : f.rel;
+    const inner = targetDir ? `${targetDir.replace(/^\/+|\/+$/g, '')}/${f.rel}` : f.rel;
+    const dest = `${folder}/${inner}`;
 
     const buf = readFileSync(f.abs);
     if (buf.length > MAX_BYTES) {
@@ -193,4 +210,45 @@ export async function download(employeeIdOrName, destPath) {
   const out = destPath || `${folder}-workspace.zip`;
   writeFileSync(out, Buffer.from(await res.arrayBuffer()));
   return { employee, path: out, bytes: statSync(out).size };
+}
+
+/**
+ * Remove one file from an employee's workspace.
+ *
+ * `upload` had no counterpart, so a file put in the wrong place — the wrong
+ * folder, the wrong employee, the wrong ORG — stayed there until somebody
+ * opened the dashboard. That happened on 2026-09-12: three documents meant for
+ * the OutreachGuy CMO were pushed to OpenLabor's CMO first, and the only
+ * remedy the CLI offered was overwriting each of them with a line saying to
+ * ignore it.
+ *
+ * The path is the one `upload` prints and `download` unzips — relative to the
+ * employee's own folder, so `openlabor rm seth ads/plan.md` removes what
+ * `openlabor upload seth ads/plan.md` wrote. A missing file is an error rather
+ * than a quiet success: "removed" about a file that was never there reads as
+ * proof the path was right.
+ */
+export async function rm(employeeIdOrName, relPath) {
+  const creds = requireAuth();
+  const employee = await getEmployee(employeeIdOrName);
+  const folder = employee.template_id || employee.id;
+
+  const clean = String(relPath || '').replace(/^\/+/, '');
+  if (!clean) throw new Error('Missing path. Usage: openlabor rm <employee> <path-in-workspace>');
+  const dest = clean.startsWith(`${folder}/`) ? clean : `${folder}/${clean}`;
+
+  const url = `${API_URL}/api/workspace/file?path=${encodeURIComponent(dest)}`;
+  const res = await fetch(url, { method: 'DELETE', headers: { 'X-API-Key': creds.api_key } });
+  if (res.status === 404) throw new Error(`No such file in the workspace: ${dest}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    if (res.status === 403) {
+      throw new Error(
+        'Forbidden. Deleting needs a workspace key — run `openlabor login` (browser) rather ' +
+        'than logging in with an employee key.',
+      );
+    }
+    throw new Error(`Delete failed: ${res.status} ${body.slice(0, 200)}`);
+  }
+  return { employee, path: dest };
 }

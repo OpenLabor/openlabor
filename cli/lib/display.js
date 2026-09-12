@@ -234,6 +234,7 @@ export function printHelp() {
   console.log(`  ${colors.yellow}upload <employee> <path>${colors.reset}               Send a file or folder to their workspace`);
   console.log(`  ${colors.yellow}upload --shared <path>${colors.reset}                 Send it to the shared folder, readable by everyone`);
   console.log(`  ${colors.yellow}download <employee> [dest.zip]${colors.reset}         Get their whole workspace as a zip`);
+  console.log(`  ${colors.yellow}rm <employee> <path>${colors.reset}                   Remove one file you uploaded by mistake`);
   console.log(`  ${colors.yellow}tasks <employee>${colors.reset} / ${colors.yellow}run <task-id>${colors.reset}       List scheduled tasks, then run one now`);
   console.log('');
   console.log(`${colors.bold}Building the team${colors.reset}`);

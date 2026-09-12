@@ -9,7 +9,7 @@ import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
 import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, getContext, setContext, listCatalogSkills, listInstalledSkills, listWiki, readWiki, writeWiki, searchWiki } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
-import { upload, uploadToShared, download } from '../lib/files.js';
+import { upload, uploadToShared, download, rm } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -472,6 +472,22 @@ async function main() {
       if (upRes.merged.length) console.log(`${colors.dim}${upRes.merged.length} merged into existing content${colors.reset}`);
       if (upRes.skipped.length) console.log(`${colors.dim}${upRes.skipped.length} skipped${colors.reset}`);
       if (upRes.failed.length) console.log(`${colors.yellow}${upRes.failed.length} failed${colors.reset}`);
+      break;
+    }
+
+    case 'rm': {
+      // openlabor rm <employee> <path-in-workspace>
+      // The counterpart `upload` never had. Deliberately one file at a time and
+      // deliberately not recursive: the mistake this exists to undo is a file
+      // in the wrong place, and a glob would turn it into a folder in the wrong
+      // place.
+      const rmEmployee = sub;
+      const rmPath = rest[0];
+      if (!rmEmployee || !rmPath) {
+        fail('Missing arguments.', 'Usage: openlabor rm <employee> <path-in-workspace>');
+      }
+      const rmRes = await rm(rmEmployee, rmPath).catch((err) => fail(err.message));
+      console.log(`${colors.green}Removed${colors.reset} ${colors.bold}${rmRes.path}${colors.reset} ${colors.dim}from ${rmRes.employee.custom_name || rmRes.employee.template_id}${colors.reset}`);
       break;
     }
 

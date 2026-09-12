@@ -52,6 +52,7 @@ openlabor history
 | `openlabor history <employee>` | List employee's conversations |
 | `openlabor upload <employee> <file-or-dir>` | Send documents or assets into their workspace |
 | `openlabor download <employee> [dest.zip]` | Pull their whole workspace as a zip |
+| `openlabor rm <employee> <path>` | Remove one file from their workspace |
 | `openlabor tasks <employee>` | List scheduled tasks |
 | `openlabor run <task-id>` | Run a scheduled task now |
 

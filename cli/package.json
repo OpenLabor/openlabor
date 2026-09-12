@@ -1,6 +1,6 @@
 {
   "name": "openlabor",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Browse, install, and pilot OpenLabor AI employees from Claude Code, Codex, Cursor, OpenCode, and more",
   "type": "module",
   "bin": {
