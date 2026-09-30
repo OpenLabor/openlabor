@@ -1,3 +1,6 @@
+import { readFileSync, statSync, existsSync } from 'fs';
+import { basename, extname } from 'path';
+import { randomUUID } from 'crypto';
 import { requireAuth, saveLastSession, getLastSession } from './auth.js';
 import { createClient } from './api.js';
 import { API_URL } from './config.js';
@@ -117,7 +120,7 @@ export async function getEmployee(idOrName) {
  * ask — always creates a new session.
  * If no employee specified, auto-routes based on message content.
  */
-export async function ask(employeeIdOrName, message) {
+export async function ask(employeeIdOrName, message, opts = {}) {
   const { client } = getClient();
 
   let employee;
@@ -127,16 +130,18 @@ export async function ask(employeeIdOrName, message) {
   } else {
     // Auto-route
     const employees = await client.get('/api/employees');
-    employee = routeToEmployee(employees.filter(e => e.status !== 'fired'), message);
+    const active = (Array.isArray(employees) ? employees : []).filter(e => e.status !== 'fired');
+    if (active.length === 0) {
+      throw new Error('Nobody works in this workspace yet. Hire someone first: `openlabor hire`.');
+    }
+    employee = routeToEmployee(active, message);
     routed = true;
+    opts.onRouted?.(employee);
   }
 
   const sessionId = `cli-${Date.now()}`;
 
-  const result = await client.post(
-    `/api/employees/${employee.id}/chat/${sessionId}`,
-    { message }
-  );
+  const result = await sendMessage(client, employee.id, sessionId, message, opts);
 
   // Save session for this employee AND as the global latest
   const employeeKey = employee.template_id || employee.custom_name || employee.id;
@@ -159,7 +164,7 @@ export async function ask(employeeIdOrName, message) {
  * If employee specified, continues latest session with that employee.
  * If no employee, continues the most recent conversation.
  */
-export async function chat(employeeIdOrName, message) {
+export async function chat(employeeIdOrName, message, opts = {}) {
   const { client } = getClient();
 
   let employeeKey;
@@ -182,10 +187,7 @@ export async function chat(employeeIdOrName, message) {
     throw new Error(`No previous conversation with "${employeeKey}". Use "ask" first.`);
   }
 
-  const result = await client.post(
-    `/api/employees/${employee.id}/chat/${encodeURIComponent(sessionId)}`,
-    { message }
-  );
+  const result = await sendMessage(client, employee.id, sessionId, message, opts);
 
   // Update global latest
   saveLastSession('_latest', sessionId);
@@ -199,6 +201,73 @@ export async function chat(employeeIdOrName, message) {
     reply: result.reply || null,
     routed: false,
   };
+}
+
+/** A file type the chat accepts, read from the extension. */
+const MEDIA_TYPES = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
+  '.webp': 'image/webp', '.pdf': 'application/pdf', '.txt': 'text/plain', '.md': 'text/markdown',
+  '.csv': 'text/csv', '.json': 'application/json', '.html': 'text/html',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
+
+/**
+ * Put a local file where the chat can attach it: `attachments/<uuid>/<name>`,
+ * uploaded raw, so a 40 MB PDF costs one request and no base64. The chat
+ * schema wants the path, the revision the upload answered and the size.
+ */
+async function uploadAttachment(client, localPath) {
+  if (!existsSync(localPath)) throw new Error(`No such file to attach: ${localPath}`);
+  const name = basename(localPath).replace(/[\\/\x00-\x1f]/g, '_').slice(0, 180);
+  const path = `attachments/${randomUUID()}/${name}`;
+  const bytes = readFileSync(localPath);
+  const up = await client.postRaw(`/api/workspace/file?path=${encodeURIComponent(path)}`, bytes);
+  const mediaType = MEDIA_TYPES[extname(name).toLowerCase()] || 'application/octet-stream';
+  return {
+    type: mediaType.startsWith('image/') ? 'image' : 'document',
+    data: '',
+    mediaType,
+    name,
+    workspacePath: path,
+    revision: up?.revision,
+    size: up?.size ?? statSync(localPath).size,
+  };
+}
+
+/**
+ * Send one message and wait for the whole reply, streamed.
+ *
+ * The stream endpoint, not the blocking one: a long turn (research, a big
+ * file) held one request open until the reply was complete, and any proxy
+ * that gives up first lost the answer. The stream sends a ping every few
+ * seconds, and `onToken` lets a person watch the reply arrive.
+ */
+async function sendMessage(client, employeeId, sessionId, message, opts = {}) {
+  const attachments = [];
+  for (const file of opts.attach ?? []) attachments.push(await uploadAttachment(client, file));
+
+  let text = '';
+  let fullText = null;
+  let error = null;
+  await client.stream(
+    `/api/employees/${encodeURIComponent(employeeId)}/chat/${encodeURIComponent(sessionId)}/stream`,
+    { message, ...(attachments.length ? { attachments } : {}) },
+    (event) => {
+      if (typeof event.token === 'string') {
+        text += event.token;
+        opts.onToken?.(event.token);
+      } else if (event.tool?.name) {
+        opts.onTool?.(event.tool);
+      } else if (event.done) {
+        fullText = typeof event.fullText === 'string' ? event.fullText : null;
+      } else if (event.error) {
+        error = String(event.error);
+      }
+    },
+  );
+  if (error && !text && !fullText) throw new Error(error);
+  return { reply: fullText ?? (text || null), error };
 }
 
 /**
@@ -249,6 +318,39 @@ export async function listTasks(employeeIdOrName) {
 export async function runTask(taskId) {
   const { client } = getClient();
   return client.post(`/api/crons/tasks/${encodeURIComponent(taskId)}/run`, {});
+}
+
+/**
+ * Schedule a recurring task. `schedule` is a 5-field cron or the dashboard's
+ * wording ("Daily at 9:00 AM", "Weekly, Monday at 9:00 AM", "Every 30
+ * minutes"); the API turns it into a cron and refuses anything more often than
+ * every 15 minutes.
+ */
+export async function createTask(employeeIdOrName, { name, prompt, schedule, timezone }) {
+  const { client } = getClient();
+  if (!name?.trim()) throw new Error('A task needs a name.');
+  if (!prompt?.trim()) throw new Error('A task needs a prompt — pass --prompt "<text>" or --file <path>.');
+  if (!schedule?.trim()) throw new Error('A task needs a schedule — pass --schedule "Daily at 9:00 AM" or a cron.');
+  const employee = await getEmployee(employeeIdOrName);
+  const task = await client.post(`/api/crons/tasks/employee/${encodeURIComponent(employee.id)}`, {
+    name: name.trim(),
+    prompt,
+    schedule: schedule.trim(),
+    timezone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+  return { employee, task };
+}
+
+/** Pause a running task or resume a paused one. Answers the new state. */
+export async function toggleTask(taskId) {
+  const { client } = getClient();
+  return client.patch(`/api/crons/tasks/${encodeURIComponent(taskId)}/toggle`, {});
+}
+
+export async function deleteTask(taskId) {
+  const { client } = getClient();
+  await client.del(`/api/crons/tasks/${encodeURIComponent(taskId)}`);
+  return { ok: true, id: taskId };
 }
 
 // ─── Building a team, rather than talking to one ──────────────
@@ -317,7 +419,9 @@ export async function hireCustom({ name, role, description, emoji, bg }) {
     ? bg
     : AVATAR_BG[Math.abs(hashString(name)) % AVATAR_BG.length];
 
-  return client.postForm('/api/employees/custom', {
+  // JSON, not a form: the route validates a JSON body, and a multipart one
+  // failed every time with 400 "name: Required".
+  return client.post('/api/employees/custom', {
     name: name.trim(),
     role: role?.trim() || '',
     description: description?.trim() || '',
@@ -341,15 +445,17 @@ export async function createSkill({ name, description, instruction, employee }) 
   const { client } = getClient();
   if (!name?.trim()) throw new Error('A skill name is required.');
   if (!instruction?.trim()) throw new Error('A skill needs an instruction — pass --file.');
+  // A skill lives in one employee's workspace; the API refuses one with no
+  // owner. Saying so here beats its "employeeId: Required".
+  if (!employee) throw new Error('Who should learn it? Pass --for <employee>.');
 
-  let employeeId;
-  if (employee) employeeId = (await getEmployee(employee)).id;
+  const employeeId = (await getEmployee(employee)).id;
 
   return client.post('/api/skills/create', {
     name: name.trim(),
     description: description?.trim() || '',
     instruction,
-    ...(employeeId ? { employeeId } : {}),
+    employeeId,
   });
 }
 
@@ -390,11 +496,61 @@ export async function updateInstalledSkill({ employee, skill, instruction, name,
   return { employee: emp, skill: match };
 }
 
-/** The company brain — what every employee reads before working. */
+/** Install a catalog skill (`openlabor skill catalog` prints the ids) on one employee. */
+export async function installSkillOn(employeeIdOrName, skillId) {
+  const { client } = getClient();
+  const employee = await getEmployee(employeeIdOrName);
+  const res = await client.post(`/api/skills/employee/${encodeURIComponent(employee.id)}`, { skillId });
+  const skills = Array.isArray(res?.skills) ? res.skills : [];
+  // The installed copy gets its own id (the folder name); that is the one
+  // `skill list`, `skill update` and `skill remove` show.
+  const installed = skills.find((s) => s.templateId === skillId || s.id === skillId);
+  return { employee, skill: installed?.id ?? skillId, skills };
+}
+
+/**
+ * Take a skill away from one employee. Their workspace copy is removed; the
+ * catalog keeps it.
+ *
+ * An installed skill has its own id (`agent-intelligence`, the folder name) and
+ * remembers the catalog id it came from as `templateId`. The API deletes by the
+ * first; people copy either one, so both are accepted — as is the name.
+ */
+export async function removeSkillFrom(employeeIdOrName, skill) {
+  const { client } = getClient();
+  const employee = await getEmployee(employeeIdOrName);
+  const installed = await client.get(`/api/skills/employee/${encodeURIComponent(employee.id)}`);
+  const list = Array.isArray(installed) ? installed : [];
+  const want = String(skill).trim();
+  const match = list.find(
+    (s) => s.id === want || s.templateId === want || s.name?.toLowerCase() === want.toLowerCase(),
+  );
+  if (!match) {
+    const have = list.map((s) => s.id).join(', ') || '(none installed)';
+    throw new Error(`${employee.custom_name || employee.template_id} has no skill "${skill}". Installed: ${have}`);
+  }
+  await client.del(`/api/skills/employee/${encodeURIComponent(employee.id)}/${encodeURIComponent(match.id)}`);
+  return { employee, skill: match.id };
+}
+
+/**
+ * The company brain — what every employee reads before working.
+ *
+ * Since the wiki, the brief lives in `wiki/company.md` and `org_context` is
+ * empty on most orgs, so this answered "(empty)" beside a page of prose. The
+ * column still wins when it holds something; the page is the fallback.
+ */
 export async function getContext() {
   const { client } = getClient();
   const org = await client.get('/api/org');
-  return org?.org_context || '';
+  if (org?.org_context) return { text: org.org_context, source: 'org_context' };
+  try {
+    const file = await client.get(`/api/workspace/file?path=${encodeURIComponent('wiki/company.md')}`);
+    if (typeof file?.content === 'string' && file.content.trim()) return { text: file.content, source: 'wiki/company.md' };
+  } catch {
+    // No page either: the brain is genuinely empty.
+  }
+  return { text: '', source: null };
 }
 
 /**
@@ -519,14 +675,23 @@ export async function writeWiki(slug, text) {
   if (!text?.trim()) throw new Error(`Refusing to write an empty page to ${path}.`);
 
   let existing = null;
+  let revision;
   try {
     const file = await client.get(`/api/workspace/file?path=${encodeURIComponent(path)}`);
     existing = typeof file?.content === 'string' ? file.content : null;
-  } catch {
+    revision = typeof file?.revision === 'number' ? file.revision : undefined;
+  } catch (err) {
     // A page that is not there yet is a create, not an error.
+    if (err.status !== 404) throw err;
   }
 
-  await client.put(`/api/workspace/file?path=${encodeURIComponent(path)}`, { content: text });
+  // The revision read above goes back with the write. Newer orgs refuse to
+  // overwrite a file without it (409 "supply its revision"), and it also means
+  // an edit made between the read and the write is refused, not clobbered.
+  await client.put(`/api/workspace/file?path=${encodeURIComponent(path)}`, {
+    content: text,
+    ...(revision !== undefined ? { revision } : {}),
+  });
   return { path, created: existing === null, replaced: existing?.length ?? 0, characters: text.length };
 }
 

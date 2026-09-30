@@ -21,7 +21,6 @@ case "$CMD" in
     if [ ! -f "$CONFIG_FILE" ]; then
       # Return defaults
       case "$KEY" in
-        auto_upgrade) echo "false" ;;
         default_target) echo "claude" ;;
         update_check) echo "true" ;;
         *) echo "" ;;
@@ -32,7 +31,6 @@ case "$CMD" in
     VALUE=$(grep "^${KEY}:" "$CONFIG_FILE" 2>/dev/null | sed 's/^[^:]*:\s*//' | tr -d '"'"'" || true)
     if [ -z "$VALUE" ]; then
       case "$KEY" in
-        auto_upgrade) echo "false" ;;
         default_target) echo "claude" ;;
         update_check) echo "true" ;;
         *) echo "" ;;

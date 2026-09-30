@@ -21,6 +21,8 @@ export const colors = {
   bgBlue: c('\x1b[44m'),
 };
 
+const jsonMode = () => process.env.OPENLABOR_JSON === '1';
+
 /**
  * Report a failure and exit non-zero.
  *
@@ -226,32 +228,50 @@ export function printHelp() {
   console.log(`  ${colors.yellow}whoami${colors.reset}                                 Show current login info`);
   console.log(`  ${colors.yellow}team${colors.reset}                                   List your org's live employees`);
   console.log(`  ${colors.yellow}ask "<message>"${colors.reset}                        New conversation (auto-routes to best employee)`);
-  console.log(`  ${colors.yellow}ask <employee> "<message>"${colors.reset}              New conversation with specific employee`);
-  console.log(`  ${colors.yellow}chat "<message>"${colors.reset}                       Continue last conversation`);
-  console.log(`  ${colors.yellow}chat <employee> "<message>"${colors.reset}             Continue with specific employee`);
-  console.log(`  ${colors.yellow}history${colors.reset}                                List all conversations`);
-  console.log(`  ${colors.yellow}history <employee>${colors.reset}                    List employee's conversations`);
-  console.log(`  ${colors.yellow}upload <employee> <path>${colors.reset}               Send a file or folder to their workspace`);
+  console.log(`  ${colors.yellow}ask <employee> "<message>"${colors.reset}             New conversation with a specific employee`);
+  console.log(`  ${colors.yellow}chat "<message>"${colors.reset}                       Continue the last conversation`);
+  console.log(`  ${colors.yellow}chat <employee> "<message>"${colors.reset}            Continue with a specific employee`);
+  console.log(`${colors.dim}    ask/chat: --attach <file> (repeatable) sends a file with the message${colors.reset}`);
+  console.log(`  ${colors.yellow}history [employee]${colors.reset}                     List conversations`);
+  console.log('');
+  console.log(`${colors.bold}Files${colors.reset}`);
+  console.log(`  ${colors.yellow}ls <employee> [dir]${colors.reset}                    List the files in their folder`);
+  console.log(`  ${colors.yellow}upload <employee> <path>${colors.reset}               Send a file or folder (--dir <sub>, --overwrite)`);
   console.log(`  ${colors.yellow}upload --shared <path>${colors.reset}                 Send it to the shared folder, readable by everyone`);
-  console.log(`  ${colors.yellow}download <employee> [dest.zip]${colors.reset}         Get their whole workspace as a zip`);
-  console.log(`  ${colors.yellow}rm <employee> <path>${colors.reset}                   Remove one file you uploaded by mistake`);
-  console.log(`  ${colors.yellow}tasks <employee>${colors.reset} / ${colors.yellow}run <task-id>${colors.reset}       List scheduled tasks, then run one now`);
+  console.log(`  ${colors.yellow}download <employee> [dest.zip]${colors.reset}         Get their whole folder as a zip`);
+  console.log(`  ${colors.yellow}mv <employee> <from> <to>${colors.reset}              Move or rename a file (end <to> with / for a folder)`);
+  console.log(`  ${colors.yellow}rm <employee> <file>${colors.reset}                   Remove one file (never a folder)`);
+  console.log(`${colors.dim}    ls, mv and rm take --shared instead of <employee> for the shared folder${colors.reset}`);
+  console.log('');
+  console.log(`${colors.bold}Scheduled tasks${colors.reset}`);
+  console.log(`  ${colors.yellow}tasks <employee>${colors.reset}                       List their scheduled tasks`);
+  console.log(`  ${colors.yellow}tasks create <employee> "<name>"${colors.reset}       --schedule "Daily at 9:00 AM" --prompt "<text>" | --file <path>`);
+  console.log(`  ${colors.yellow}tasks toggle <task-id>${colors.reset}                 Pause or resume one`);
+  console.log(`  ${colors.yellow}tasks rm <task-id>${colors.reset}                     Delete one`);
+  console.log(`  ${colors.yellow}run <task-id>${colors.reset}                          Run one now`);
   console.log('');
   console.log(`${colors.bold}Building the team${colors.reset}`);
   console.log(`  ${colors.yellow}hire${colors.reset}                                   List the roles you can hire`);
   console.log(`  ${colors.yellow}hire <role> "<name>"${colors.reset}                   Hire one of them`);
-  console.log(`  ${colors.yellow}hire --custom "<name>" --role <r> --description <d>${colors.reset}`);
+  console.log(`  ${colors.yellow}hire --custom "<name>" --role <r> --description <d>${colors.reset} `);
   console.log(`                                         Create a role we don't ship`);
-  console.log(`  ${colors.yellow}skill catalog${colors.reset}                          Every skill this workspace holds (database)`);
-  console.log(`  ${colors.yellow}skill list <employee>${colors.reset}                  What one employee has (their workspace files)`);
-  console.log(`  ${colors.yellow}skill create "<name>" --file <path>${colors.reset}    Teach a skill (--for <employee>)`);
-  console.log(`  ${colors.yellow}context${colors.reset} / ${colors.yellow}context set --file <path>${colors.reset}   Read or replace the company brain`);
-  console.log(`  ${colors.yellow}wiki${colors.reset} / ${colors.yellow}wiki read <slug>${colors.reset}                   The company wiki — what every employee reads`);
+  console.log(`  ${colors.yellow}skill catalog${colors.reset}                          Every skill this workspace holds`);
+  console.log(`  ${colors.yellow}skill list <employee>${colors.reset}                  What one employee has`);
+  console.log(`  ${colors.yellow}skill install <employee> <skill-id>${colors.reset}    Give them a skill from the catalog`);
+  console.log(`  ${colors.yellow}skill remove <employee> <skill-id>${colors.reset}     Take it away`);
+  console.log(`  ${colors.yellow}skill create "<name>" --file <path> --for <employee>${colors.reset} `);
+  console.log(`                                         Write a new skill for one employee`);
+  console.log(`  ${colors.yellow}skill update <employee> <skill> --file <path>${colors.reset} `);
+  console.log(`                                         Rewrite one employee's copy`);
+  console.log(`  ${colors.yellow}context${colors.reset}                                Print the company brief`);
+  console.log(`  ${colors.yellow}context set --file <path>${colors.reset}              Replace it`);
+  console.log(`  ${colors.yellow}wiki${colors.reset}                                   List the company wiki — what every employee reads`);
+  console.log(`  ${colors.yellow}wiki read <slug>${colors.reset}                       Print one page`);
   console.log(`  ${colors.yellow}wiki write <slug> --file <path>${colors.reset}        Replace one page`);
   console.log(`  ${colors.yellow}wiki search "<query>"${colors.reset}                  Search across the pages`);
   console.log('');
   console.log(`${colors.bold}Update & Config:${colors.reset}`);
-  console.log(`  ${colors.yellow}version${colors.reset}                                Show version and install info`);
+  console.log(`  ${colors.yellow}version${colors.reset} / ${colors.yellow}--version${colors.reset}                    Show version and install info`);
   console.log(`  ${colors.yellow}update${colors.reset}                                 Update openlabor to latest`);
   console.log(`  ${colors.yellow}config${colors.reset}                                 Show current config`);
   console.log(`  ${colors.yellow}config <key> <value>${colors.reset}                   Set a config value`);
@@ -266,11 +286,13 @@ export function printHelp() {
   console.log(`  ${colors.cyan}windsurf${colors.reset}   Windsurf     → .windsurfrules (appended)`);
   console.log(`  ${colors.cyan}raw${colors.reset}        Raw file     → ./<name>.md`);
   console.log('');
-  console.log(`${colors.dim}If --target is omitted, the tool auto-detects based on config files in your project.${colors.reset}`);
+  console.log(`${colors.dim}If --target is omitted, the tool auto-detects from your project, then falls back to the default_target config.${colors.reset}`);
+  console.log('');
+  console.log(`${colors.bold}Scripting:${colors.reset} ${colors.dim}OPENLABOR_JSON=1 makes every team command print one JSON object and nothing else.${colors.reset}`);
   console.log('');
   console.log(`${colors.bold}Examples:${colors.reset}`);
   console.log(`  ${colors.dim}# Browse & install${colors.reset}`);
-  console.log(`  openlabor list employees`);
+  console.log(`  openlabor list roles`);
   console.log(`  openlabor install skill logo-maker --target cursor`);
   console.log(`  openlabor search "social media"`);
   console.log('');
@@ -317,6 +339,10 @@ export function printConfig(config) {
  * Print live org employees (from API, not registry).
  */
 export function printOrgEmployees(agents) {
+  if (jsonMode()) {
+    console.log(JSON.stringify({ ok: true, employees: (agents ?? []).filter((a) => a.status !== 'fired') }));
+    return;
+  }
   if (!agents || agents.length === 0) {
     console.log(`${colors.yellow}No employees found in your org.${colors.reset}`);
     return;
@@ -326,20 +352,20 @@ export function printOrgEmployees(agents) {
     { label: 'NAME', width: 16 },
     { label: 'ROLE', width: 24 },
     { label: 'DEPARTMENT', width: 16 },
-    { label: 'SKILLS', width: 40 },
+    { label: 'ID', width: 38 },
   ];
 
   const rows = agents
     .filter(a => a.status !== 'fired')
-    .map((a) => {
-      const skills = Array.isArray(a.skills) ? a.skills.slice(0, 3).join(', ') : '';
-      return [
-        `${colors.bold}${a.custom_name || a.name || a.template_id || a.id}${colors.reset}`,
-        a.role || '',
-        `${colors.cyan}${a.department || ''}${colors.reset}`,
-        `${colors.dim}${skills}${colors.reset}`,
-      ];
-    });
+    // The SKILLS column read `a.skills`, which the employee list has not
+    // returned since the move to edge — it was always blank. Skills per person
+    // are `openlabor skill list <employee>`.
+    .map((a) => [
+      `${colors.bold}${a.custom_name || a.name || a.template_id || a.id}${colors.reset}`,
+      a.role || '',
+      `${colors.cyan}${a.department || ''}${colors.reset}`,
+      `${colors.dim}${a.template_id || a.id}${colors.reset}`,
+    ]);
 
   console.log('');
   console.log(`${colors.bold}${colors.magenta}Your Employees${colors.reset}  ${colors.dim}(${rows.length} active)${colors.reset}`);
@@ -353,7 +379,20 @@ export function printOrgEmployees(agents) {
 /**
  * Print dispatch/reply result (chat response).
  */
-export function printDispatchResult(result) {
+export function printDispatchResult(result, { streamed = false } = {}) {
+  // JSON mode prints the JSON and nothing else. It used to print the whole
+  // human block first, so `OPENLABOR_JSON=1 openlabor ask … | jq` never parsed.
+  if (jsonMode()) {
+    console.log(JSON.stringify({ ok: true, ...result }));
+    return;
+  }
+  if (streamed) {
+    // The reply was already written to the terminal token by token.
+    console.log('');
+    console.log('');
+    console.log(`${colors.dim}Session: ${result.sessionId} · continue: openlabor chat ${result.employeeName} "your follow-up"${colors.reset}`);
+    return;
+  }
   console.log('');
   console.log(`${colors.green}${colors.bold}${result.employeeName}${colors.reset} ${colors.dim}(${result.role})${colors.reset}`);
   console.log(`${colors.dim}Session: ${result.sessionId}${colors.reset}`);
@@ -366,18 +405,18 @@ export function printDispatchResult(result) {
     console.log(`${colors.yellow}No reply yet.${colors.reset} The employee may still be processing.`);
   }
   console.log('');
-  console.log(`${colors.dim}Continue: openlabor reply ${result.employeeName} "your follow-up"${colors.reset}`);
+  console.log(`${colors.dim}Continue: openlabor chat ${result.employeeName} "your follow-up"${colors.reset}`);
   console.log('');
-
-  if (process.env.OPENLABOR_JSON === '1') {
-    console.log(JSON.stringify(result));
-  }
 }
 
 /**
  * Print history for an employee — sessions from API + local.
  */
 export function printHistory(result) {
+  if (jsonMode()) {
+    console.log(JSON.stringify({ ok: true, ...result }));
+    return;
+  }
   console.log('');
   console.log(`${colors.bold}Conversations${colors.reset}  ${colors.dim}${result.employeeName}${colors.reset}`);
   console.log('');
@@ -404,16 +443,16 @@ export function printHistory(result) {
   console.log('');
   console.log(`${colors.dim}Continue: openlabor chat ${result.employeeName} "your message"${colors.reset}`);
   console.log('');
-
-  if (process.env.OPENLABOR_JSON === '1') {
-    console.log(JSON.stringify(result));
-  }
 }
 
 /**
  * Print employee scheduled tasks.
  */
 export function printEmployeeTasks(result) {
+  if (jsonMode()) {
+    console.log(JSON.stringify({ ok: true, ...result }));
+    return;
+  }
   console.log('');
   console.log(`${colors.bold}Scheduled Tasks${colors.reset}  ${colors.dim}${result.employeeName}${colors.reset}  ${colors.dim}(${result.tasks.length} total)${colors.reset}`);
   console.log('');
@@ -424,16 +463,13 @@ export function printEmployeeTasks(result) {
     for (const task of result.tasks) {
       const name = task.name || 'Unnamed';
       const schedule = task.schedule?.expr || task.schedule || '';
-      console.log(`  ${colors.yellow}${task.id}${colors.reset}  ${colors.bold}${name}${colors.reset}  ${colors.dim}${schedule}${colors.reset}`);
+      const paused = task.enabled === false ? ` ${colors.red}(paused)${colors.reset}` : '';
+      console.log(`  ${colors.yellow}${task.id}${colors.reset}  ${colors.bold}${name}${colors.reset}${paused}  ${colors.dim}${schedule}${colors.reset}`);
     }
     console.log('');
-    console.log(`${colors.dim}Run now: openlabor run <task-id>${colors.reset}`);
+    console.log(`${colors.dim}Run now: openlabor run <task-id> · pause/resume: openlabor tasks toggle <task-id>${colors.reset}`);
   }
   console.log('');
-
-  if (process.env.OPENLABOR_JSON === '1') {
-    console.log(JSON.stringify(result));
-  }
 }
 
 /**
@@ -454,6 +490,6 @@ export function printOutdated(outdated, currentVersion) {
     );
   }
   console.log('');
-  console.log(`Run: ${colors.dim}openlabor update-skills${colors.reset}`);
+  console.log(`Run: ${colors.dim}openlabor prompts refresh${colors.reset}`);
   console.log('');
 }

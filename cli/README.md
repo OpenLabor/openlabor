@@ -1,22 +1,22 @@
-# @openlabor/cli
+# openlabor
 
 Pilot the AI employees working in your OpenLabor workspace, and copy OpenLabor's prompt catalog into Claude Code, Cursor, Codex, OpenCode, or Windsurf.
 
-**15 roles** across 8 departments. **26 skills** with full workflows. **35 missions** on autopilot.
+**16 roles** across 9 departments. **52 skills** with full workflows. **35 missions** on autopilot.
 
 ## Install
 
 ```bash
-npm install -g @openlabor/cli
+npm install -g openlabor
 ```
 
 Or use directly:
 
 ```bash
-npx @openlabor/cli team
+npx openlabor team
 ```
 
-Both `openlabor` and the shorthand `ol` are installed.
+Both `openlabor` and the shorthand `ol` are installed. (`@openlabor/cli` is an old alias pinned to 2.x — install `openlabor`.)
 
 ---
 
@@ -48,15 +48,54 @@ openlabor history
 | `openlabor ask <employee> "message"` | New conversation with specific employee |
 | `openlabor chat "message"` | Continue last conversation |
 | `openlabor chat <employee> "message"` | Continue with specific employee |
+| `… --attach <file>` | Send a file with the message (repeatable, `ask` and `chat`) |
 | `openlabor history` | List all conversations |
 | `openlabor history <employee>` | List employee's conversations |
-| `openlabor upload <employee> <file-or-dir>` | Send documents or assets into their workspace |
-| `openlabor download <employee> [dest.zip]` | Pull their whole workspace as a zip |
-| `openlabor rm <employee> <path>` | Remove one file from their workspace |
-| `openlabor tasks <employee>` | List scheduled tasks |
-| `openlabor run <task-id>` | Run a scheduled task now |
 
-`upload` skips the files OpenLabor generates (`SOUL.md`, `AGENTS.md`, …) so an import can never overwrite who an employee is, and refuses to replace existing files unless you pass `--overwrite`.
+Replies stream into the terminal as they are written.
+
+### Files
+
+| Command | What it does |
+|---------|-------------|
+| `openlabor ls <employee> [dir]` | List the files in their folder |
+| `openlabor upload <employee> <file-or-dir>` | Send documents or assets (any type, up to 100 MB each) |
+| `openlabor upload --shared <file-or-dir>` | Send them to `shared/`, which every employee reads |
+| `openlabor download <employee> [dest.zip]` | Pull their whole folder as a zip |
+| `openlabor mv <employee> <from> <to>` | Move or rename a file or folder (end `<to>` with `/` to move into a folder) |
+| `openlabor rm <employee> <file>` | Remove one file — never a folder |
+
+`ls`, `mv` and `rm` take `--shared` in place of `<employee>` to work in `shared/`.
+
+Where an upload lands: a single file keeps its **name** only (`upload cmo ads/plan.md` writes `cmo/plan.md`); a folder keeps the paths **inside** it. Add `--dir ads` to put either under a subfolder. `upload` refuses to replace a file that is already there unless you pass `--overwrite`, and it always skips the persona files at the root of an employee's folder (`SOUL.md`, `MEMORY.md`, `TONE.md`, …) so an import can never overwrite who an employee is — edit those in the dashboard. A run where any file failed exits non-zero.
+
+### Scheduled tasks
+
+| Command | What it does |
+|---------|-------------|
+| `openlabor tasks <employee>` | List their scheduled tasks |
+| `openlabor tasks create <employee> "<name>" --schedule "Daily at 9:00 AM" --prompt "<text>"` | Schedule one (`--file <path>` for a long prompt; a 5-field cron works too) |
+| `openlabor tasks toggle <task-id>` | Pause or resume |
+| `openlabor tasks rm <task-id>` | Delete |
+| `openlabor run <task-id>` | Run one now |
+
+### Building the team
+
+| Command | What it does |
+|---------|-------------|
+| `openlabor hire` | The roles you can hire |
+| `openlabor hire <role> "<name>"` | Hire one |
+| `openlabor hire --custom "<name>" --role <r> --description <d>` | Create a role we don't ship |
+| `openlabor skill catalog` | Every skill this workspace holds |
+| `openlabor skill list <employee>` | What one employee has |
+| `openlabor skill install <employee> <skill-id>` | Give them a catalog skill |
+| `openlabor skill remove <employee> <skill>` | Take it away (the catalog keeps it) |
+| `openlabor skill create "<name>" --file <path> --for <employee>` | Write a new skill for one employee |
+| `openlabor skill update <employee> <skill> --file <path>` | Rewrite one employee's copy |
+| `openlabor context` / `context set --file <path>` | Read or replace the company brief |
+| `openlabor wiki` / `wiki read <slug>` | The company wiki every employee reads |
+| `openlabor wiki write <slug> --file <path>` | Replace one page |
+| `openlabor wiki search "<query>"` | Search the pages |
 
 ### How it works
 
@@ -68,19 +107,18 @@ Your terminal                        OpenLabor platform
 │ madison      │                    │ Madison (CMO)     │
 │ "write       │                    │  ├─ skills        │
 │  tweets"     │    employee reply  │  ├─ tools         │
-│              │ <──────────────────│  └─ runs on       │
-└──────────────┘                    │     OpenClaw      │
-                                    └───────────────────┘
+│              │ <──────────────────│  └─ workspace     │
+└──────────────┘                    └───────────────────┘
 ```
 
 The CLI sends messages to your employees via the OpenLabor API. They reply using their skills, tools, and API credentials — all configured on the platform.
 
 ### JSON output
 
-For AI tool integrations, set `OPENLABOR_JSON=1` for structured JSON — on failures too, so a caller can branch:
+For AI tool integrations, set `OPENLABOR_JSON=1`: every team command then prints exactly one JSON object on stdout and nothing else — on failures too (`{"ok":false,"error":…}`, exit 1), so a caller can branch:
 
 ```bash
-OPENLABOR_JSON=1 openlabor ask madison "Write tweets"
+OPENLABOR_JSON=1 openlabor ask madison "Write tweets" | jq -r .reply
 OPENLABOR_JSON=1 openlabor whoami
 # {"ok":true,"logged_in":true,"api":"https://api.openlabor.ai","org_id":"org_xxx","org_name":"Acme"}
 ```
@@ -98,8 +136,8 @@ There is one production API and it is not a setting. For local development, set 
 Browse and install AI employee personas and skill workflows as local prompts. Works with any coding tool. These commands hire nobody — they write a Markdown file into your editor.
 
 ```bash
-openlabor list roles                        # browse 15 role prompts
-openlabor list skills                       # browse 26 skills
+openlabor list roles                        # browse 16 role prompts
+openlabor list skills                       # browse 52 skills
 openlabor search "logo"                     # search across both
 openlabor install skill logo-maker          # auto-detects your tool
 openlabor install role cto                  # install an AI persona
@@ -137,11 +175,11 @@ git clone https://github.com/OpenLabor/openlabor.git ~/.claude/skills/openlabor
 ## Updates & config
 
 ```bash
-openlabor version                   # show version and install info
+openlabor --version                 # show version and install info
 openlabor update                    # upgrade the CLI itself
 openlabor prompts outdated          # prompt files you installed that are behind
 openlabor prompts refresh           # re-install them at the current version
-openlabor config auto_upgrade true  # automatic upgrades
+openlabor config update_check false # stop the "new version available" notice
 ```
 
 `outdated` and `update-skills` still work as aliases for the two `prompts` commands.
@@ -149,8 +187,8 @@ openlabor config auto_upgrade true  # automatic upgrades
 Config lives at `~/.openlabor/config.yaml`:
 
 ```yaml
-auto_upgrade: false
-default_target: claude  # editor to install prompts into
+default_target: claude  # editor to install prompts into when the project doesn't say
+update_check: true      # daily check for a newer CLI
 ```
 
 ---
@@ -178,7 +216,7 @@ default_target: claude  # editor to install prompts into
 | **Data Analyst** | Derek | Data |
 | **Logo Designer** | Logan | Design |
 | **Accountant** | Penny | Finance |
-| ... and 7 more | | |
+| ... and 8 more | | |
 
 ## Links
 

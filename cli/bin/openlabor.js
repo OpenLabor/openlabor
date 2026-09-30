@@ -7,13 +7,86 @@ import { VERSION } from '../lib/version.js';
 import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallType, performUpdate } from '../lib/updater.js';
 import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
-import { listOrgEmployees, ask, chat, history, listTasks, runTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, getContext, setContext, listCatalogSkills, listInstalledSkills, listWiki, readWiki, writeWiki, searchWiki } from '../lib/pilot.js';
+import { listOrgEmployees, ask, chat, history, listTasks, runTask, createTask, toggleTask, deleteTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, installSkillOn, removeSkillFrom, getContext, setContext, listCatalogSkills, listInstalledSkills, listWiki, readWiki, writeWiki, searchWiki } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
-import { upload, uploadToShared, download, rm } from '../lib/files.js';
+import { upload, uploadToShared, download, rm, ls, mv } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const args = process.argv.slice(2);
+const JSON_MODE = process.env.OPENLABOR_JSON === '1';
+
+// `--version` / `-v` are what everyone types first, and they answered
+// "Unknown command" with exit 1 — while `openlabor update` told people to run
+// `openlabor version` to confirm.
+if (args[0] === '--version' || args[0] === '-v') args[0] = 'version';
+
+/**
+ * Pull `--name value` flags (repeatable ones collect into arrays) out of an
+ * argument list, returning the flags and what is left.
+ */
+function takeFlags(list, spec) {
+  const flags = {};
+  const restArgs = [];
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i];
+    const name = a?.startsWith('--') ? a.slice(2) : null;
+    if (name && name in spec) {
+      if (spec[name] === 'bool') flags[name] = true;
+      else if (spec[name] === 'many') (flags[name] ??= []).push(list[++i]);
+      else flags[name] = list[++i];
+    } else {
+      restArgs.push(a);
+    }
+  }
+  return { flags, rest: restArgs };
+}
+
+/** Status lines for people go to stderr, so stdout stays the answer. */
+function note(text) {
+  if (!JSON_MODE) process.stderr.write(`${colors.dim}${text}${colors.reset}\n`);
+}
+
+/** Print a partial-failure summary and make the exit code say so. */
+function finishBatch(res) {
+  if (res.skipped.length) console.log(`${colors.dim}${res.skipped.length} skipped${colors.reset}`);
+  if (res.failed.length) {
+    console.log(`${colors.yellow}${res.failed.length} failed${colors.reset}`);
+    // An agent reads the exit code, not the ✗. "3 failed" with exit 0 read as
+    // success to every script that called this.
+    process.exitCode = 1;
+  }
+}
+
+/** One line per file as an upload goes, or nothing in JSON mode. */
+function uploadProgress({ rel, status, why }) {
+  if (JSON_MODE) return;
+  if (status === 'ok') console.log(`  ${colors.green}\u2713${colors.reset} ${rel}`);
+  else if (status === 'skipped') console.log(`  ${colors.dim}\u2013 ${rel}${why ? ` (${why})` : ''}${colors.reset}`);
+  else console.log(`  ${colors.red}\u2717${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
+}
+
+/**
+ * Stream a reply to the terminal as it arrives. In JSON mode, or when stdout
+ * is a pipe, nothing is printed until the end.
+ */
+function streamPrinter() {
+  const live = !JSON_MODE && process.stdout.isTTY;
+  let started = false;
+  return {
+    live,
+    onRouted: (emp) => note(`Routed to ${emp.custom_name || emp.template_id} (${emp.role || 'employee'})`),
+    onToken: (token) => {
+      if (!live) return;
+      if (!started) { process.stdout.write('\n'); started = true; }
+      process.stdout.write(token);
+    },
+    onTool: (tool) => {
+      if (live && tool.state === 'running') process.stderr.write(`${colors.dim}[${tool.name}]${colors.reset} `);
+    },
+    get started() { return started; },
+  };
+}
 
 function unknownCommand(cmd) {
   console.error(`${colors.red}Unknown command:${colors.reset} ${cmd}`);
@@ -319,25 +392,23 @@ async function main() {
         process.exit(1);
       }
 
+      const { flags: askFlags, rest: askArgs } = takeFlags(allArgs, { attach: 'many' });
+
       // If first arg looks like a message (has spaces or is quoted), treat as auto-route
-      if (allArgs.length === 1 || (sub && sub.includes(' '))) {
-        askMsg = allArgs.join(' ');
+      if (askArgs.length === 1 || (askArgs[0] && askArgs[0].includes(' '))) {
+        askMsg = askArgs.join(' ');
       } else {
-        askEmployee = sub;
-        askMsg = rest.join(' ');
+        askEmployee = askArgs[0];
+        askMsg = askArgs.slice(1).join(' ');
       }
 
-      if (!askMsg) {
-        console.error(`${colors.red}Error:${colors.reset} Missing message.`);
-        process.exit(1);
-      }
+      if (!askMsg) fail('Missing message.', 'Usage: openlabor ask [employee] "<message>" [--attach <file>]');
 
-      console.log(`${colors.dim}${askEmployee ? `Asking ${askEmployee}...` : 'Routing to best employee...'}${colors.reset}`);
-      const askResult = await ask(askEmployee, askMsg).catch((err) => fail(err.message));
-      if (askResult.routed) {
-        console.log(`${colors.dim}Routed to ${askResult.employeeName} (${askResult.role})${colors.reset}`);
-      }
-      printDispatchResult(askResult);
+      note(askEmployee ? `Asking ${askEmployee}...` : 'Routing to best employee...');
+      const askOut = streamPrinter();
+      const askResult = await ask(askEmployee, askMsg, { ...askOut, attach: askFlags.attach })
+        .catch((err) => fail(err.message));
+      printDispatchResult(askResult, { streamed: askOut.started });
       break;
     }
 
@@ -355,21 +426,22 @@ async function main() {
         process.exit(1);
       }
 
-      if (chatArgs.length === 1 || (sub && sub.includes(' '))) {
-        chatMsg = chatArgs.join(' ');
+      const { flags: chatFlags, rest: chatRest } = takeFlags(chatArgs, { attach: 'many' });
+
+      if (chatRest.length === 1 || (chatRest[0] && chatRest[0].includes(' '))) {
+        chatMsg = chatRest.join(' ');
       } else {
-        chatEmployee = sub;
-        chatMsg = rest.join(' ');
+        chatEmployee = chatRest[0];
+        chatMsg = chatRest.slice(1).join(' ');
       }
 
-      if (!chatMsg) {
-        console.error(`${colors.red}Error:${colors.reset} Missing message.`);
-        process.exit(1);
-      }
+      if (!chatMsg) fail('Missing message.', 'Usage: openlabor chat [employee] "<message>" [--attach <file>]');
 
-      console.log(`${colors.dim}${chatEmployee ? `Chatting with ${chatEmployee}...` : 'Continuing last conversation...'}${colors.reset}`);
-      const chatResult = await chat(chatEmployee, chatMsg).catch((err) => fail(err.message));
-      printDispatchResult(chatResult);
+      note(chatEmployee ? `Chatting with ${chatEmployee}...` : 'Continuing last conversation...');
+      const chatOut = streamPrinter();
+      const chatResult = await chat(chatEmployee, chatMsg, { ...chatOut, attach: chatFlags.attach })
+        .catch((err) => fail(err.message));
+      printDispatchResult(chatResult, { streamed: chatOut.started });
       break;
     }
 
@@ -430,16 +502,16 @@ async function main() {
         const sharedRes = await uploadToShared(sharedPath, {
           dir: sharedDir,
           overwrite: sharedOverwrite,
-          onFile: ({ rel, status, why }) => {
-            if (status === 'ok') console.log(`  ${colors.green}\u2713${colors.reset} ${rel}`);
-            else if (status === 'skipped') console.log(`  ${colors.dim}\u2013 ${rel}${why ? ` (${why})` : ''}${colors.reset}`);
-            else console.log(`  ${colors.red}\u2717${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
-          },
+          onFile: uploadProgress,
         }).catch((err) => fail(err.message));
+        if (JSON_MODE) {
+          console.log(JSON.stringify({ ok: sharedRes.failed.length === 0, ...sharedRes }));
+          if (sharedRes.failed.length) process.exitCode = 1;
+          break;
+        }
         console.log('');
         console.log(`${colors.green}${sharedRes.uploaded} file(s)${colors.reset} \u2192 ${colors.bold}Shared${colors.reset} ${colors.dim}(readable by every employee)${colors.reset}`);
-        if (sharedRes.skipped.length) console.log(`${colors.dim}${sharedRes.skipped.length} skipped${colors.reset}`);
-        if (sharedRes.failed.length) console.log(`${colors.yellow}${sharedRes.failed.length} failed${colors.reset}`);
+        finishBatch(sharedRes);
         break;
       }
 
@@ -457,37 +529,78 @@ async function main() {
       const upRes = await upload(upEmployee, upPath, {
         dir: upDir,
         overwrite: upOverwrite,
-        onFile: ({ rel, status, why }) => {
-          if (status === 'ok') console.log(`  ${colors.green}✓${colors.reset} ${rel}`);
-          // A merged file is worth its own mark: what landed is not what was
-          // sent, and someone who thinks they replaced SOUL.md should see that
-          // it was folded into what was already there.
-          else if (status === 'merged') console.log(`  ${colors.green}✓${colors.reset} ${rel} ${colors.dim}(merged into the existing file)${colors.reset}`);
-          else if (status === 'skipped') console.log(`  ${colors.dim}– ${rel}${colors.reset}`);
-          else console.log(`  ${colors.red}✗${colors.reset} ${rel} ${colors.dim}(${why})${colors.reset}`);
-        },
+        onFile: uploadProgress,
       }).catch((err) => fail(err.message));
+      if (JSON_MODE) {
+        const { employee: upEmp, ...upRest } = upRes;
+        console.log(JSON.stringify({ ok: upRes.failed.length === 0, employee_id: upEmp.id, ...upRest }));
+        if (upRes.failed.length) process.exitCode = 1;
+        break;
+      }
       console.log('');
       console.log(`${colors.green}${upRes.uploaded} file(s)${colors.reset} → ${colors.bold}${upRes.employee.custom_name || upRes.employee.template_id}${colors.reset}`);
-      if (upRes.merged.length) console.log(`${colors.dim}${upRes.merged.length} merged into existing content${colors.reset}`);
-      if (upRes.skipped.length) console.log(`${colors.dim}${upRes.skipped.length} skipped${colors.reset}`);
-      if (upRes.failed.length) console.log(`${colors.yellow}${upRes.failed.length} failed${colors.reset}`);
+      finishBatch(upRes);
       break;
     }
 
     case 'rm': {
-      // openlabor rm <employee> <path-in-workspace>
-      // The counterpart `upload` never had. Deliberately one file at a time and
-      // deliberately not recursive: the mistake this exists to undo is a file
-      // in the wrong place, and a glob would turn it into a folder in the wrong
-      // place.
-      const rmEmployee = sub;
+      // openlabor rm <employee> <file>  |  openlabor rm --shared <file>
+      // One FILE at a time, never a folder: the mistake this exists to undo is
+      // a file in the wrong place. lib/files.js refuses a folder before the
+      // server can delete everything under it.
+      const shared = sub === '--shared';
+      const rmEmployee = shared ? null : sub;
       const rmPath = rest[0];
-      if (!rmEmployee || !rmPath) {
-        fail('Missing arguments.', 'Usage: openlabor rm <employee> <path-in-workspace>');
+      if ((!shared && !rmEmployee) || !rmPath) {
+        fail('Missing arguments.', 'Usage: openlabor rm <employee> <file>   |   openlabor rm --shared <file>');
       }
-      const rmRes = await rm(rmEmployee, rmPath).catch((err) => fail(err.message));
-      console.log(`${colors.green}Removed${colors.reset} ${colors.bold}${rmRes.path}${colors.reset} ${colors.dim}from ${rmRes.employee.custom_name || rmRes.employee.template_id}${colors.reset}`);
+      const rmRes = await rm(rmEmployee, rmPath, { shared }).catch((err) => fail(err.message));
+      if (JSON_MODE) {
+        console.log(JSON.stringify({ ok: true, path: rmRes.path }));
+        break;
+      }
+      console.log(`${colors.green}Removed${colors.reset} ${colors.bold}${rmRes.path}${colors.reset} ${colors.dim}from ${rmRes.label}${colors.reset}`);
+      break;
+    }
+
+    case 'ls': {
+      // openlabor ls <employee> [dir]  |  openlabor ls --shared [dir]
+      const shared = sub === '--shared';
+      if (!sub) fail('Missing employee.', 'Usage: openlabor ls <employee> [dir]   |   openlabor ls --shared [dir]');
+      const lsRes = await ls(shared ? null : sub, rest[0], { shared }).catch((err) => fail(err.message));
+      if (JSON_MODE) {
+        console.log(JSON.stringify({ ok: true, dir: lsRes.dir, files: lsRes.files }));
+        break;
+      }
+      if (lsRes.files.length === 0) {
+        console.log(`${colors.dim}(no files under ${lsRes.dir}/)${colors.reset}`);
+        break;
+      }
+      console.log('');
+      console.log(`${colors.bold}${lsRes.dir}/${colors.reset}  ${colors.dim}(${lsRes.files.length} file${lsRes.files.length > 1 ? 's' : ''})${colors.reset}`);
+      console.log('');
+      for (const f of lsRes.files) {
+        const size = f.bytes >= 1048576 ? `${(f.bytes / 1048576).toFixed(1)} MB`
+          : f.bytes >= 1024 ? `${(f.bytes / 1024).toFixed(1)} kB` : `${f.bytes} B`;
+        console.log(`  ${f.path.slice(lsRes.dir.length + 1).padEnd(48)} ${colors.dim}${size}${colors.reset}`);
+      }
+      console.log('');
+      break;
+    }
+
+    case 'mv': {
+      // openlabor mv <employee> <from> <to>  |  openlabor mv --shared <from> <to>
+      const shared = sub === '--shared';
+      const [mvFrom, mvTo] = rest;
+      if ((!shared && !sub) || !mvFrom || !mvTo) {
+        fail('Missing arguments.', 'Usage: openlabor mv <employee> <from> <to>   (end <to> with / to move into a folder)');
+      }
+      const mvRes = await mv(shared ? null : sub, mvFrom, mvTo, { shared }).catch((err) => fail(err.message));
+      if (JSON_MODE) {
+        console.log(JSON.stringify({ ok: true, from: mvRes.from, to: mvRes.to }));
+        break;
+      }
+      console.log(`${colors.green}Moved${colors.reset} ${mvRes.from} ${colors.dim}\u2192${colors.reset} ${colors.bold}${mvRes.to}${colors.reset}`);
       break;
     }
 
@@ -498,17 +611,61 @@ async function main() {
         fail('Missing employee.', 'Usage: openlabor download <employee> [dest.zip]');
       }
       const dlRes = await download(dlEmployee, rest[0]).catch((err) => fail(err.message));
+      if (JSON_MODE) {
+        console.log(JSON.stringify({ ok: true, path: dlRes.path, bytes: dlRes.bytes }));
+        break;
+      }
       console.log(`${colors.green}Downloaded${colors.reset} ${colors.bold}${dlRes.path}${colors.reset} ${colors.dim}(${(dlRes.bytes / 1048576).toFixed(1)} MB)${colors.reset}`);
       break;
     }
 
-    case 'tasks': {
+    case 'tasks':
+    case 'task': {
       // openlabor tasks <employee>
+      // openlabor tasks create <employee> "<name>" --schedule "<when>" (--prompt "<text>" | --file <path>)
+      // openlabor tasks toggle <task-id>
+      // openlabor tasks rm <task-id>
+      if (sub === 'create' || sub === 'add') {
+        const { flags: tf, rest: tr } = takeFlags(rest, { schedule: 'one', prompt: 'one', file: 'one', timezone: 'one' });
+        const [who, ...nameParts] = tr;
+        if (!who) fail('Missing employee.', 'Usage: openlabor tasks create <employee> "<name>" --schedule "<when>" --prompt "<text>"');
+        if (tf.file && !existsSync(tf.file)) fail(`No such file: ${tf.file}`);
+        const made = await createTask(who, {
+          name: nameParts.join(' '),
+          prompt: tf.file ? readFileSync(tf.file, 'utf-8') : tf.prompt,
+          schedule: tf.schedule,
+          timezone: tf.timezone,
+        }).catch((err) => fail(err.message));
+        if (JSON_MODE) {
+          console.log(JSON.stringify({ ok: true, task: made.task }));
+          break;
+        }
+        console.log(`${colors.green}Scheduled${colors.reset} ${colors.bold}${made.task.name}${colors.reset} ${colors.dim}for ${made.employee.custom_name || made.employee.template_id} · ${made.task.schedule?.expr || made.task.schedule || tf.schedule} · ${made.task.id}${colors.reset}`);
+        break;
+      }
+      if (sub === 'toggle' || sub === 'pause' || sub === 'resume') {
+        if (!rest[0]) fail('Missing task id.', 'Usage: openlabor tasks toggle <task-id>   (ids: openlabor tasks <employee>)');
+        const toggled = await toggleTask(rest[0]).catch((err) => fail(err.message));
+        if (JSON_MODE) {
+          console.log(JSON.stringify({ ok: true, id: rest[0], enabled: toggled?.enabled }));
+          break;
+        }
+        console.log(`${colors.green}${toggled?.enabled ? 'Resumed' : 'Paused'}${colors.reset} ${rest[0]}`);
+        break;
+      }
+      if (sub === 'rm' || sub === 'delete') {
+        if (!rest[0]) fail('Missing task id.', 'Usage: openlabor tasks rm <task-id>');
+        await deleteTask(rest[0]).catch((err) => fail(err.message));
+        if (JSON_MODE) {
+          console.log(JSON.stringify({ ok: true, id: rest[0] }));
+          break;
+        }
+        console.log(`${colors.green}Deleted${colors.reset} task ${rest[0]}`);
+        break;
+      }
       const tasksEmployee = sub;
       if (!tasksEmployee) {
-        console.error(`${colors.red}Error:${colors.reset} Missing employee.`);
-        console.error(`Usage: ${colors.dim}openlabor tasks <employee>${colors.reset}`);
-        process.exit(1);
+        fail('Missing employee.', 'Usage: openlabor tasks <employee>');
       }
       const tasksResult = await listTasks(tasksEmployee).catch((err) => fail(err.message));
       printEmployeeTasks(tasksResult);
@@ -524,8 +681,11 @@ async function main() {
         process.exit(1);
       }
       const runResult = await runTask(runTaskId).catch((err) => fail(err.message));
+      if (JSON_MODE) {
+        console.log(JSON.stringify({ ok: true, ...runResult }));
+        break;
+      }
       console.log(`${colors.green}Task triggered.${colors.reset}`);
-      if (process.env.OPENLABOR_JSON === '1') console.log(JSON.stringify(runResult));
       break;
     }
 
@@ -586,7 +746,8 @@ async function main() {
     case 'skill': {
       // openlabor skill catalog [--role <r>]   — everything the workspace holds
       // openlabor skill list <employee>        — what that employee actually has
-      // openlabor skill create <name> --file <path> [--for <employee>]
+      // openlabor skill create <name> --file <path> --for <employee>
+      // openlabor skill install|remove <employee> <skill-id>
       // openlabor skill update <employee> <skill> --file <path>
       //
       // NB `openlabor update-skills` is a different word entirely: it refreshes
@@ -669,11 +830,32 @@ async function main() {
         break;
       }
 
+      if (sub === 'install' || sub === 'add' || sub === 'remove' || sub === 'rm') {
+        const [who, skillId] = rest;
+        const adding = sub === 'install' || sub === 'add';
+        if (!who || !skillId) {
+          fail(`Usage: openlabor skill ${adding ? 'install' : 'remove'} <employee> <skill-id>`,
+            adding ? 'Skill ids: openlabor skill catalog' : 'Their skills: openlabor skill list <employee>');
+        }
+        const res = await (adding ? installSkillOn(who, skillId) : removeSkillFrom(who, skillId))
+          .catch((err) => fail(err.message));
+        if (JSON_MODE) {
+          console.log(JSON.stringify({ ok: true, employee_id: res.employee.id, skill: res.skill ?? skillId, ...(adding ? { skills: res.skills } : {}) }));
+          break;
+        }
+        const label = res.employee.custom_name || res.employee.template_id;
+        console.log(adding
+          ? `${colors.green}Installed${colors.reset} ${colors.bold}${res.skill}${colors.reset} ${colors.dim}on ${label}${colors.reset}`
+          : `${colors.green}Removed${colors.reset} ${colors.bold}${res.skill}${colors.reset} ${colors.dim}from ${label} (the catalog keeps it)${colors.reset}`);
+        break;
+      }
+
       if (sub !== 'create') {
         console.error(`${colors.red}Error:${colors.reset} Unknown skill command: ${sub || '(none)'}`);
         console.error(`Usage: ${colors.dim}openlabor skill catalog${colors.reset}                          every skill in the workspace`);
         console.error(`       ${colors.dim}openlabor skill list <employee>${colors.reset}                  what one employee has`);
-        console.error(`       ${colors.dim}openlabor skill create "<name>" --file <path> [--for <employee>]${colors.reset}`);
+        console.error(`       ${colors.dim}openlabor skill install|remove <employee> <skill-id>${colors.reset}`);
+        console.error(`       ${colors.dim}openlabor skill create "<name>" --file <path> --for <employee>${colors.reset}`);
         console.error(`       ${colors.dim}openlabor skill update <employee> <skill> --file <path>${colors.reset}   fix one employee's copy`);
         process.exit(1);
       }
@@ -797,12 +979,13 @@ async function main() {
       // openlabor context                     — print the company brain
       // openlabor context set --file <path>   — replace it
       if (!sub) {
-        const text = await getContext().catch((err) => fail(err.message));
-        if (process.env.OPENLABOR_JSON === '1') {
-          console.log(JSON.stringify({ ok: true, context: text }));
+        const ctx = await getContext().catch((err) => fail(err.message));
+        if (JSON_MODE) {
+          console.log(JSON.stringify({ ok: true, context: ctx.text, source: ctx.source }));
           break;
         }
-        console.log(text || `${colors.dim}(empty — nothing written yet)${colors.reset}`);
+        if (ctx.source === 'wiki/company.md') note('(from wiki/company.md)');
+        console.log(ctx.text || `${colors.dim}(empty — nothing written yet)${colors.reset}`);
         break;
       }
       if (sub !== 'set') {

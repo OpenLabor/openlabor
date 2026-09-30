@@ -1,17 +1,17 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, resolve, dirname } from 'path';
+import { join, resolve, dirname, relative, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
 import { execSync } from 'child_process';
 import { VERSION } from './version.js';
-import { CONFIG_DIR } from './config.js';
+import { CONFIG_DIR, loadConfig } from './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SNOOZE_FILE = join(CONFIG_DIR, 'update-snoozed');
 
 const LAST_CHECK_FILE = join(CONFIG_DIR, 'last-update-check');
 const JUST_UPGRADED_FILE = join(CONFIG_DIR, 'just-upgraded-from');
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CHECK_INTERVAL_S = 24 * 60 * 60; // 24 hours
 const REGISTRY_URL = 'https://raw.githubusercontent.com/OpenLabor/openlabor/main/cli/package.json';
 /**
  * The published npm name. Must match package.json.
@@ -89,19 +89,48 @@ export function snoozeUpdate(remoteVersion) {
 }
 
 /**
+ * Seconds since the epoch, read from the shared last-check file.
+ *
+ * ⚠️ The shell check (bin/openlabor-update-check) writes SECONDS; this function
+ * used to write MILLISECONDS to the same file. Once it had, the shell's
+ * `now - last` was negative forever and it never checked again. Seconds is the
+ * format now, and a millisecond value left behind by an older version is read
+ * as what it is.
+ */
+function readLastCheck() {
+  if (!existsSync(LAST_CHECK_FILE)) return null;
+  const n = parseInt(readFileSync(LAST_CHECK_FILE, 'utf8').trim(), 10);
+  if (isNaN(n)) return null;
+  return n > 1e11 ? Math.floor(n / 1000) : n;
+}
+
+/** True while the user has snoozed `remoteVersion` (same file and backoff as the shell check). */
+function isSnoozed(remoteVersion) {
+  if (!existsSync(SNOOZE_FILE)) return false;
+  try {
+    const [ver, level, epoch] = readFileSync(SNOOZE_FILE, 'utf8').trim().split(' ');
+    if (ver !== remoteVersion || !epoch) return false;
+    const duration = { 1: 86400, 2: 172800 }[level] ?? 604800;
+    return Math.floor(Date.now() / 1000) < Number(epoch) + duration;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if an update is available. Prints a one-line notice if so.
- * Skips if checked within last 24 hours. Silent on network errors.
+ * Skips if checked within last 24 hours, if `update_check` is false, or while
+ * snoozed. Silent on network errors.
  */
 export async function checkForUpdate() {
   try {
+    if (loadConfig().update_check === false) return null;
     ensureConfigDir();
 
-    // Check last update time
-    if (existsSync(LAST_CHECK_FILE)) {
-      const lastCheck = parseInt(readFileSync(LAST_CHECK_FILE, 'utf8').trim(), 10);
-      if (!isNaN(lastCheck) && Date.now() - lastCheck < CHECK_INTERVAL_MS) {
-        return null;
-      }
+    const now = Math.floor(Date.now() / 1000);
+    const lastCheck = readLastCheck();
+    if (lastCheck !== null && lastCheck <= now && now - lastCheck < CHECK_INTERVAL_S) {
+      return null;
     }
 
     // Fetch remote package.json
@@ -110,10 +139,9 @@ export async function checkForUpdate() {
     const pkg = await response.json();
     const remoteVersion = pkg && pkg.version;
 
-    // Write timestamp
-    writeFileSync(LAST_CHECK_FILE, String(Date.now()), 'utf8');
+    writeFileSync(LAST_CHECK_FILE, String(now), 'utf8');
 
-    if (remoteVersion && semverGt(remoteVersion, VERSION)) {
+    if (remoteVersion && semverGt(remoteVersion, VERSION) && !isSnoozed(remoteVersion)) {
       return remoteVersion;
     }
     return null;
@@ -137,20 +165,26 @@ export function printUpdateNotice(remoteVersion) {
  * Detect how openlabor is installed.
  * Returns 'git-global', 'git-vendored', 'npm', or 'npx'.
  */
-export function detectInstallType() {
-  // Get the directory of this file's package
-  const pkgDir = join(new URL(import.meta.url).pathname, '..', '..');
+/** This package's own directory. fileURLToPath, not URL.pathname: that one keeps `%20` and breaks on Windows. */
+const PKG_DIR = resolve(__dirname, '..');
+const VENDORED_DIR = join(homedir(), '.claude', 'skills', 'openlabor');
 
-  // Check for vendored install: .claude/skills/openlabor
-  const vendoredPath = join(homedir(), '.claude', 'skills', 'openlabor');
-  if (existsSync(join(vendoredPath, '.git'))) {
+export function detectInstallType() {
+  const pkgDir = PKG_DIR;
+
+  // Vendored install: THIS copy runs from inside ~/.claude/skills/openlabor.
+  // ⚠️ It used to be enough for that folder to merely exist, so an npm install
+  // on a machine that also had the clone answered `openlabor update` with a
+  // `git reset --hard` in the clone — and never updated itself.
+  const rel = relative(VENDORED_DIR, pkgDir);
+  if (existsSync(join(VENDORED_DIR, '.git')) && !rel.startsWith('..') && !isAbsolute(rel)) {
     return 'git-vendored';
   }
 
   // Check if we're running from a git repo
   try {
-    const gitDir = join(pkgDir, '.git');
-    if (existsSync(gitDir)) {
+    // The package is the repo's `cli/` folder, so the clone's .git is one up.
+    if (existsSync(join(pkgDir, '.git')) || existsSync(join(pkgDir, '..', '.git'))) {
       return 'git-global';
     }
   } catch {
@@ -193,7 +227,7 @@ export async function performUpdate() {
     try {
       execSync(cmd, { stdio: 'inherit' });
       console.log('');
-      console.log('\x1b[32m✓ Updated.\x1b[0m Run \x1b[36mopenlabor version\x1b[0m to confirm.');
+      console.log('\x1b[32m✓ Updated.\x1b[0m Run \x1b[36mopenlabor --version\x1b[0m to confirm.');
     } catch {
       console.error('');
       console.error('\x1b[31mUpdate failed.\x1b[0m If this is a permissions error, either re-run with');
@@ -204,9 +238,8 @@ export async function performUpdate() {
   }
 
   // git-global or git-vendored
-  const pkgDir = installType === 'git-vendored'
-    ? join(homedir(), '.claude', 'skills', 'openlabor')
-    : join(new URL(import.meta.url).pathname, '..', '..');
+  // The clone's root: the package sits in its `cli/` folder.
+  const pkgDir = installType === 'git-vendored' ? VENDORED_DIR : PKG_DIR;
 
   console.log(`Updating from: \x1b[2m${pkgDir}\x1b[0m`);
   console.log('');

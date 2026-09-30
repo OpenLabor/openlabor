@@ -55,23 +55,18 @@ export function createClient({ apiUrl, apiKey }) {
   }
 
   /**
-   * Same request, multipart body. One endpoint needs it — POST /employees/custom
-   * takes an avatar, so it parses form data and rejects JSON. Content-Type is
-   * omitted deliberately: fetch derives it from the FormData, boundary included,
-   * and setting it by hand produces a boundary-less header the server can't split.
+   * Send a file's own bytes as the body. `POST /api/workspace/file` streams an
+   * `application/octet-stream` body straight into storage (up to 100 MB, binary
+   * included), which the JSON routes cannot: they hold text, and refused a PNG
+   * as "decodes to binary". fetch sets Content-Length from the Buffer, and the
+   * route refuses a raw upload without one.
    */
-  async function requestForm(method, path, fields) {
-    const form = new FormData();
-    for (const [k, v] of Object.entries(fields)) {
-      if (v !== undefined && v !== null && v !== '') form.append(k, String(v));
-    }
-
+  async function requestRaw(method, path, bytes) {
     const res = await fetch(`${base}${path}`, {
       method,
-      headers: { 'X-API-Key': apiKey },
-      body: form,
+      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/octet-stream' },
+      body: bytes,
     });
-
     if (!res.ok) {
       const errBody = await res.json().catch(() => null);
       throw new ApiError(errBody?.error || `Request failed: ${res.status}`, res.status, errBody);
@@ -80,10 +75,46 @@ export function createClient({ apiUrl, apiKey }) {
     return text ? JSON.parse(text) : null;
   }
 
+  /**
+   * POST a JSON body and read the answer as server-sent events, calling
+   * onEvent(parsed) for each `data:` line. Resolves when the stream closes.
+   */
+  async function stream(path, body, onEvent) {
+    const res = await fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok || !res.body) {
+      const errBody = await res.json().catch(() => null);
+      let msg = errBody?.error || `Request failed: ${res.status}`;
+      if (typeof msg !== 'string') msg = JSON.stringify(msg);
+      if (res.status === 401) {
+        msg = 'Not authenticated (401). Your key is missing, invalid or revoked — run `openlabor login`.';
+      }
+      throw new ApiError(msg, res.status, errBody);
+    }
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for await (const chunk of res.body) {
+      buffer += decoder.decode(chunk, { stream: true });
+      let nl;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl).replace(/\r$/, '');
+        buffer = buffer.slice(nl + 1);
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (!data) continue;
+        try { onEvent(JSON.parse(data)); } catch { /* not JSON — ignore */ }
+      }
+    }
+  }
+
   return {
     get: (path) => request('GET', path),
     post: (path, body) => request('POST', path, body),
-    postForm: (path, fields) => requestForm('POST', path, fields),
+    postRaw: (path, bytes) => requestRaw('POST', path, bytes),
+    stream,
     put: (path, body) => request('PUT', path, body),
     patch: (path, body) => request('PATCH', path, body),
     del: (path) => request('DELETE', path),

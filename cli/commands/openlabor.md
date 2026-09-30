@@ -1,82 +1,76 @@
-<!-- Installed from openlabor skill: openlabor | v2.0.0 -->
 ---
 name: OpenLabor
-description: Chat with your AI employees from the terminal
+description: Pilot your OpenLabor AI employees from the terminal — talk to them, move files in and out of their workspace, schedule their work
 triggers:
   - /openlabor
 ---
 
 # OpenLabor — Pilot Your AI Team
 
-You have access to the user's OpenLabor AI employees via the `openlabor` CLI. Each employee is a real AI agent running on the platform with skills, tools, and API credentials.
+You have access to the user's OpenLabor AI employees via the `openlabor` CLI (3.1+). Each employee is a real AI agent running on the platform with its own workspace, skills and tools. Check the login first with `openlabor whoami`; if it fails, ask the user to run `openlabor login`.
 
-## Commands
+Set `OPENLABOR_JSON=1` whenever you need to read the result: every team command then prints exactly one JSON object on stdout (`{"ok":false,"error":…}` and exit 1 on failure).
 
-### Start a new conversation
+## Talk to them
+
 ```bash
-# Auto-route to the best employee for the task
-openlabor ask "Draft 3 tweet threads about our product launch"
-
-# Or specify an employee
-openlabor ask cto "Review the auth module for security issues"
-openlabor ask designer "Create a logo for our new project"
-```
-
-### Continue a conversation
-```bash
-# Continues the last conversation automatically
-openlabor chat "Make the second tweet more casual"
-
-# Continue with a specific employee
+openlabor team                                   # who works here (NAME, ROLE, ID)
+openlabor ask "Draft 3 tweet threads about our launch"   # auto-routes, NEW conversation
+openlabor ask cto "Review the auth module"               # a specific employee
+openlabor chat "Make the second one more casual"         # CONTINUE the last conversation
 openlabor chat cto "What about rate limiting?"
+openlabor ask cmo "Summarise this deck" --attach deck.pdf  # send files with a message
+openlabor history [employee]
 ```
 
-### View conversations
+- `ask` always starts a new conversation; `chat` always continues the latest one.
+- The reply is the whole answer; read it and summarise it for the user.
+
+## Files in their workspace
+
 ```bash
-openlabor history             # list all recent conversations
-openlabor history madison     # list conversations with Madison
+openlabor ls cmo [dir]                           # list their folder
+openlabor upload cmo ./brief.md --dir research   # → cmo/research/brief.md
+openlabor upload cmo ./assets                    # a whole folder (paths inside it are kept)
+openlabor upload --shared ./pricing.pdf          # shared/, read by every employee
+openlabor download cmo                           # their folder as a zip
+openlabor mv cmo research/brief.md archive/      # move (trailing /) or rename
+openlabor rm cmo research/brief.md               # one file, never a folder
 ```
 
-### Other commands
+- A single file keeps its NAME only; use `--dir` to choose the subfolder.
+- Existing files are skipped unless `--overwrite`. Persona files at the root of an employee's folder (`SOUL.md`, `MEMORY.md`, …) are never uploaded: those are edited in the dashboard.
+- `ls`, `mv`, `rm` take `--shared` instead of an employee.
+
+## Scheduled work
+
 ```bash
-openlabor team                # list all employees
-openlabor tasks madison       # list scheduled tasks
-openlabor run <task-id>       # run a scheduled task now
+openlabor tasks cmo
+openlabor tasks create cmo "Weekly recap" --schedule "Weekly, Monday at 9:00 AM" --prompt "Recap last week's metrics"
+openlabor tasks toggle <task-id>                 # pause / resume
+openlabor tasks rm <task-id>
+openlabor run <task-id>                          # run now
 ```
 
-## How to Use
+`--schedule` takes "Daily at 9:00 AM", "Weekly, Monday at 9:00 AM", "Every 30 minutes" (15 minutes minimum) or a 5-field cron.
 
-When the user asks you to delegate work to an employee:
+## Building the team
 
-1. Run `openlabor team` to see available employees and their roles/departments/skills
-2. Use `openlabor ask "task description"` to auto-route, or `openlabor ask <employee> "task"` for a specific one
-3. Read the reply and summarize it to the user
-4. If the user wants changes, use `openlabor chat "follow-up"` to continue the conversation
-
-When the user wants to continue a previous conversation:
-- Use `openlabor chat "message"` — it automatically continues the last conversation
-- Use `openlabor chat <employee> "message"` to continue with a specific employee
-
-## Auto-Routing
-
-When no employee is specified, `ask` automatically routes to the best employee:
-- **Marketing/Social/Tweets** → CMO, X Manager, Social Manager
-- **Code/Architecture/Security** → CTO
-- **Design/UI/Logo** → Designer
-- **Sales/Outreach/Leads** → Sales Rep
-- **Content/Blog/Copy** → Content Writer
-- **Strategy/Consulting** → Strategic Consultant
-
-## JSON Mode
-
-For structured output, set `OPENLABOR_JSON=1`:
 ```bash
-OPENLABOR_JSON=1 openlabor ask cmo "Write tweets"
+openlabor hire                                   # roles you can hire
+openlabor hire cmo "Madison"
+openlabor skill catalog                          # every skill in the workspace
+openlabor skill list cmo                         # what one employee has
+openlabor skill install cmo <skill-id>
+openlabor skill remove cmo <skill>
+openlabor skill create "Churn review" --file churn.md --for cmo
+openlabor context                                # the company brief
+openlabor wiki / wiki read <slug> / wiki search "<query>"
+openlabor wiki write <slug> --file page.md       # REPLACES the page
 ```
 
-## Key Rules
+## Rules
 
-- `ask` = always starts a NEW conversation
-- `chat` = always CONTINUES the latest conversation
-- Both support auto-routing (no employee arg) or specific employee
-- The CLI handles session management — no session IDs needed
+- Hiring, `context set` and `wiki write` change the user's company: confirm with the user before running them.
+- `wiki write` and `context set` replace, never merge — read first, send the merged text.
+- Prefer `upload --shared` for documents every employee should read, and an employee's folder for work that is theirs.

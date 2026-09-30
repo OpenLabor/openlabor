@@ -16,9 +16,12 @@ export const CONFIG_FILE = join(CONFIG_DIR, 'config.yaml');
  */
 export const API_URL = (process.env.OPENLABOR_API_URL || 'https://api.openlabor.ai').replace(/\/+$/, '');
 
+// `default_target` is where `install` writes when it cannot tell from the
+// project. `update_check: false` silences the "new version" notice.
+// (`auto_upgrade` was listed here and read by nothing; it is gone.)
 const DEFAULTS = {
-  auto_upgrade: false,
   default_target: 'claude',
+  update_check: true,
 };
 
 /**

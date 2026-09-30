@@ -3,6 +3,7 @@ import { join } from 'path';
 import { findEmployee, findSkill } from './registry.js';
 import { colors } from './display.js';
 import { VERSION } from './version.js';
+import { loadConfig } from './config.js';
 
 // Target configurations
 export const TARGETS = {
@@ -50,7 +51,9 @@ export function detectTarget(cwd) {
   if (existsSync(join(cwd, 'codex.md'))) return 'codex';
   if (existsSync(join(cwd, 'opencode.md'))) return 'opencode';
   if (existsSync(join(cwd, '.windsurfrules'))) return 'windsurf';
-  return 'claude'; // default fallback
+  // Nothing in the project says which tool: the `default_target` config does.
+  const fallback = loadConfig().default_target;
+  return TARGETS[fallback] ? fallback : 'claude';
 }
 
 /**

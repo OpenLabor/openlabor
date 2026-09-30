@@ -1,5 +1,61 @@
 # Changelog
 
+## [3.1.0] - 2026-09-29
+
+### Fixed
+
+- **`openlabor rm` deleted whole folders.** The server removes everything under
+  the path it is given, so `openlabor rm cmo memory` erased the folder and
+  printed "Removed". `rm` now checks that a FILE sits at exactly that path and
+  refuses a folder, naming how many files are in it.
+- **`upload <employee>` was broken on the current backend.** It went through the
+  employee's `WRITE_FILE` tool, which no longer honours `--overwrite`: older
+  orgs had existing files — `SOUL.md` included — replaced without asking, newer
+  orgs got 409 "supply its revision" even with `--overwrite`, and every binary
+  file (PNG, PDF) was refused. Uploads now use the raw file route: any type, up
+  to 100 MB, existing files skipped unless `--overwrite`.
+- **Persona files are never uploaded.** `SOUL.md`, `MEMORY.md`, `TONE.md`… at the
+  root of an employee's folder are skipped, as the README always promised.
+- **`wiki write` failed with 409 on newer orgs** when the page existed. It now
+  sends back the revision it read, which also refuses an edit made in between
+  instead of overwriting it.
+- **`hire --custom` always failed** with 400 "name: Required": it sent a form and
+  the API reads JSON.
+- **`skill create` without `--for` always failed.** `--for` is required now, and
+  the CLI says so before calling the API.
+- **`context` said "(empty)" beside a full company brief.** It falls back to
+  `wiki/company.md` when the old column is empty.
+- **`team` showed a SKILLS column that was always blank.** It shows the id to
+  use in other commands instead.
+- **A partly failed upload exited 0.** It exits 1 now.
+- **`~/.openlabor/credentials.json` was readable by other users.** It is 600 and
+  the folder 700, fixed on the next run for existing installs.
+- **`OPENLABOR_JSON=1` printed text before the JSON** for `ask`, `chat`,
+  `history`, `tasks`, `upload`. Every team command now prints one JSON object
+  and nothing else.
+- **`--version` / `-v` answered "Unknown command".**
+- **The update check stopped for good** once the built-in check had run: the two
+  checks wrote the same file in seconds and milliseconds. Both use seconds, and
+  the built-in one now honours `update_check: false` and snooze.
+- **The update notice offered older versions** to anyone ahead of `main`. Only a
+  newer version is announced.
+- **`openlabor update` could `git reset --hard` an unrelated clone** in
+  `~/.claude/skills/openlabor` instead of updating the npm install.
+- **The README told people to install `@openlabor/cli`**, the old alias pinned to
+  2.x.
+- `config default_target` is used when a project gives no hint; `auto_upgrade`,
+  which nothing read, is gone. Windows paths (`a\b.md`) and `..` are handled
+  before they reach the API.
+
+### Added
+
+- `openlabor ls <employee> [dir]` and `openlabor mv <employee> <from> <to>`.
+- `--shared` for `rm`, `ls` and `mv`.
+- `openlabor skill install <employee> <skill-id>` and `skill remove`.
+- `openlabor tasks create | toggle | rm`.
+- `ask` / `chat` stream the reply as it is written, and take
+  `--attach <file>` (repeatable).
+
 ## [3.0.1] - 2026-09-12
 
 ### Fixed
