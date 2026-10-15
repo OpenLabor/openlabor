@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.2.0] - 2026-10-14
+
+### Added
+
+- **`openlabor connect <app> <employee> --key-env <VAR>`** (or `--key-stdin`)
+  connects an app that signs in with an API key (agentmail, hunter, apollo,
+  firecrawl…) for one employee, then reads back whether the provider accepted
+  the key. A rejected key prints "Saved but the key was rejected" and exits 1.
+  The key is never taken as an argument, so it stays out of shell history.
+  OAuth apps (gmail, slack, linkedin…) are refused with the dashboard path.
+
 ## [3.1.0] - 2026-09-29
 
 ### Fixed

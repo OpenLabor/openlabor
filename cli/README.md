@@ -93,6 +93,7 @@ Where an upload lands: a single file keeps its **name** only (`upload cmo ads/pl
 | `openlabor skill create "<name>" --file <path> --for <employee>` | Write a new skill for one employee |
 | `openlabor skill update <employee> <skill> --file <path>` | Rewrite one employee's copy |
 | `openlabor context` / `context set --file <path>` | Read or replace the company brief |
+| `openlabor connect <app> <employee> --key-env <VAR>` | Connect an API-key app for one employee (OAuth apps stay in the dashboard) |
 | `openlabor wiki` / `wiki read <slug>` | The company wiki every employee reads |
 | `openlabor wiki write <slug> --file <path>` | Replace one page |
 | `openlabor wiki search "<query>"` | Search the pages |

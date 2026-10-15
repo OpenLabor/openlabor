@@ -7,7 +7,7 @@ import { VERSION } from '../lib/version.js';
 import { checkForUpdate, checkForUpdateShell, printUpdateNotice, detectInstallType, performUpdate } from '../lib/updater.js';
 import { loadConfig, saveConfig, CONFIG_FILE, API_URL } from '../lib/config.js';
 import { loadCredentials, saveCredentials, clearCredentials, getAllSessions } from '../lib/auth.js';
-import { listOrgEmployees, ask, chat, history, listTasks, runTask, createTask, toggleTask, deleteTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, installSkillOn, removeSkillFrom, getContext, setContext, listCatalogSkills, listInstalledSkills, listWiki, readWiki, writeWiki, searchWiki } from '../lib/pilot.js';
+import { listOrgEmployees, ask, chat, history, listTasks, runTask, createTask, toggleTask, deleteTask, resolveApiKey, listHirableRoles, hire, hireCustom, createSkill, updateInstalledSkill, installSkillOn, removeSkillFrom, getContext, setContext, listCatalogSkills, listInstalledSkills, listWiki, readWiki, writeWiki, searchWiki, connectApp } from '../lib/pilot.js';
 import { browserLogin } from '../lib/browser-login.js';
 import { upload, uploadToShared, download, rm, ls, mv } from '../lib/files.js';
 import { readFileSync, existsSync, readdirSync } from 'fs';
@@ -973,6 +973,38 @@ async function main() {
       console.error(`${colors.red}Error:${colors.reset} Unknown wiki command: ${sub}`);
       console.error(`Usage: ${colors.dim}openlabor wiki${colors.reset} | ${colors.dim}wiki read <slug>${colors.reset} | ${colors.dim}wiki write <slug> --file <path>${colors.reset} | ${colors.dim}wiki search "<query>"${colors.reset}`);
       process.exit(1);
+    }
+
+    case 'connect': {
+      // openlabor connect <app> <employee> --key-env VAR | --key-stdin
+      // API-key apps only. The key never goes on the command line: argv lands
+      // in shell history and `ps`, and this is someone else's credential.
+      const { flags: cf, rest: cr } = takeFlags([sub, ...rest].filter(Boolean), { 'key-env': 'one', 'key-stdin': 'bool' });
+      const [app, employee] = cr;
+      if (!app || !employee || (!cf['key-env'] && !cf['key-stdin'])) {
+        fail('Usage: openlabor connect <app> <employee> --key-env <VAR> | --key-stdin');
+      }
+      let appKey;
+      if (cf['key-env']) {
+        appKey = process.env[cf['key-env']];
+        if (!appKey) fail(`$${cf['key-env']} is empty or unset.`);
+      } else {
+        appKey = readFileSync(0, 'utf-8');
+      }
+      const res = await connectApp(app, employee, appKey).catch((err) => fail(err.message));
+      // A stored key that the provider rejects is not a connection.
+      if (res.keyStatus === 'invalid') process.exitCode = 1;
+      if (JSON_MODE) {
+        console.log(JSON.stringify({ ok: res.keyStatus !== 'invalid', ...res }));
+        break;
+      }
+      if (res.keyStatus === 'invalid') {
+        console.log(`${colors.yellow}Saved but the key was rejected${colors.reset} ${colors.bold}${res.app}${colors.reset} for ${res.employee}: ${res.keyError || 'invalid key'}`);
+      } else {
+        const how = res.keyStatus === 'ok' ? 'key checked' : 'key not checkable';
+        console.log(`${colors.green}Connected${colors.reset} ${colors.bold}${res.app}${colors.reset} for ${res.employee} ${colors.dim}(${how})${colors.reset}`);
+      }
+      break;
     }
 
     case 'context': {

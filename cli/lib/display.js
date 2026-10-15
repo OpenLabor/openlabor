@@ -263,6 +263,8 @@ export function printHelp() {
   console.log(`                                         Write a new skill for one employee`);
   console.log(`  ${colors.yellow}skill update <employee> <skill> --file <path>${colors.reset} `);
   console.log(`                                         Rewrite one employee's copy`);
+  console.log(`  ${colors.yellow}connect <app> <employee> --key-env <VAR>${colors.reset} `);
+  console.log(`                                         Connect an API-key app (or --key-stdin); OAuth apps stay in the dashboard`);
   console.log(`  ${colors.yellow}context${colors.reset}                                Print the company brief`);
   console.log(`  ${colors.yellow}context set --file <path>${colors.reset}              Replace it`);
   console.log(`  ${colors.yellow}wiki${colors.reset}                                   List the company wiki — what every employee reads`);

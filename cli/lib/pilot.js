@@ -713,3 +713,49 @@ export async function searchWiki(query) {
     .filter((r) => typeof r.path === 'string' && r.path.startsWith(`${WIKI_DIR}/`))
     .map((r) => ({ ...r, slug: r.path.slice(WIKI_DIR.length + 1).replace(/\.md$/, '') }));
 }
+
+// ─── Apps ─────────────────────────────────────────────────────
+
+/**
+ * Connect an app that takes an API key (agentmail, hunter, apollo…) for one
+ * employee, then read back whether the key actually works.
+ *
+ * OAuth apps (gmail, slack, linkedin…) are refused by the server: they end at a
+ * consent screen only the founder can click, in Dashboard → Employees → Apps.
+ * The status read-back matters because the BYOK route stores any string — a
+ * "connected" with a dead key is the thing the caller must not report as done.
+ */
+export async function connectApp(app, employeeIdOrName, appKey) {
+  const { client } = getClient();
+  const slug = app?.trim().toLowerCase();
+  if (!slug) throw new Error('Which app? e.g. openlabor connect agentmail <employee> --key-env AGENTMAIL_API_KEY');
+  if (!appKey?.trim()) throw new Error(`No key given for ${slug}.`);
+  const employee = await getEmployee(employeeIdOrName);
+
+  try {
+    await client.post(`/api/connectors/${encodeURIComponent(slug)}/connect-api-key`, {
+      employeeId: employee.id,
+      apiKey: appKey.trim(),
+    });
+  } catch (err) {
+    if (/uses OAuth/.test(err.message)) {
+      throw new Error(`${slug} signs in with OAuth, not a key. Connect it in Dashboard → Employees → ${employee.custom_name || employee.name || employee.id} → Apps.`);
+    }
+    throw err;
+  }
+
+  let status = null;
+  try {
+    status = await client.get(`/api/connectors/${encodeURIComponent(slug)}/status?employeeId=${encodeURIComponent(employee.id)}`);
+  } catch {
+    // Connected but unverifiable; say so rather than guess.
+  }
+  return {
+    app: slug,
+    employeeId: employee.id,
+    employee: employee.custom_name || employee.name || employee.id,
+    connected: status?.connected ?? true,
+    keyStatus: status?.keyStatus ?? 'unchecked',
+    keyError: status?.keyError ?? null,
+  };
+}
